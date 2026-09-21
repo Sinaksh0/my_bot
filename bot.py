@@ -71,8 +71,7 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمترین: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {item['updated_at']}\n"
-                        "-" * 60 + "\n"
+                        f" - اپدیت: {item['updated_at']}\n\n"
                     )
 
             elif text in '🪙 قیمت سکه 🪙':
@@ -202,7 +201,7 @@ class Arz:
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
-    webhook_url = os.environ.get('WEBHOOK_URL')
+    webhook_url = 'https://my-bot-rsy5.onrender.com'
 
     port = int(os.environ.get('PORT', 10000))
 
