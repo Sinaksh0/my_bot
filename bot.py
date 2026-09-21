@@ -212,10 +212,13 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
 
-    print(f"Bot is starting with webhook on port {port}...")
-    application.run_webhook(
-        listen='0.0.0.0',
-        port=port,
-        url_path='webhook',
-        webhook_url=f"{webhook_url.rstrip('/')}/webhook"
-    )
+    if webhook_url:
+        print(f"Bot is starting with webhook on port {port}...")
+        application.run_webhook(
+            listen='0.0.0.0',
+            port=port,
+            url_path='webhook',
+            webhook_url=f"{webhook_url.rstrip('/')}/webhook"
+        )
+    else:
+        application.run_polling()
