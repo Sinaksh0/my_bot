@@ -3,7 +3,8 @@ import os
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-API = 'https://tgju.apidarkness.workers.dev'
+MAIN_API = os.getenv('Main_API')
+CAR_API = os.getenv('Car_API')
 
 class Arz:
     def __init__(self):
@@ -34,8 +35,6 @@ class Arz:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         name = user.full_name
-        user_id = user.id
-        print(f"User: '{name}', ID: '{user_id}' started the bot.")
 
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
@@ -60,8 +59,8 @@ class Arz:
             if text in '💱 قیمت ارز ها 💱':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
-                data = await self.get_arz(f'{API}/currency')
-                message = "<pre>💱 قیمت ارزها 💱\n\n"
+                data = await self.get_arz(f'{MAIN_API}/currency')
+                message = "💱 قیمت ارزها 💱\n\n"
                 for item in data:
                     if item['key'] in exception:
                         continue
@@ -76,8 +75,8 @@ class Arz:
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
-                data = await self.get_arz(f'{API}/coin')
-                message = "<pre>🪙 قیمت سکه 🪙\n\n"
+                data = await self.get_arz(f'{MAIN_API}/coin')
+                message = "🪙 قیمت سکه 🪙\n\n"
                 for item in data:
                     if item['key'] == 'retail_sekee':
                         break
@@ -92,8 +91,8 @@ class Arz:
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
-                data = await self.get_arz(f'{API}/gold')
-                message = "<pre>💰 قیمت طلا 💰\n\n"
+                data = await self.get_arz(f'{MAIN_API}/gold')
+                message = "💰 قیمت طلا 💰\n\n"
                 for item in data:
                     if item['key'] == 'geram18' or item['key'] == 'geram24':
                         message += (
@@ -110,9 +109,9 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
 
-                irankhodro = await self.get_car('https://car.apidarkness.workers.dev/dakheli/irankhodro')
+                irankhodro = await self.get_car(f'{CAR_API}/dakheli/irankhodro')
 
-                saipa = await self.get_car('https://car.apidarkness.workers.dev/dakheli/saipa')
+                saipa = await self.get_car(f'{CAR_API}/dakheli/saipa')
 
                 message = "🚗 قیمت خودرو های ایران خودرو 🚗\n\n"
                 for item in irankhodro:
@@ -177,7 +176,7 @@ class Arz:
                     await update.message.reply_text("❌ خودرو انتخابی نامعتبر است.")
                     return
 
-                data = await self.get_car(f'https://car.apidarkness.workers.dev/varedati/{url}')
+                data = await self.get_car(f'{CAR_API}/varedati/{url}')
                 message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
                 for item in data:
                     message += (
@@ -190,8 +189,7 @@ class Arz:
                 await self.send_long_message(update, message)
                 return
             
-            message += "</pre>"
-            await update.message.reply_text(message, parse_mode='HTML')
+            await update.message.reply_text(message)
             return
         
         except requests.exceptions.RequestException:
@@ -206,5 +204,4 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
 
-    print("Bot is running...")
     application.run_polling()
