@@ -201,7 +201,7 @@ class Arz:
                 await sent.delete()
 
                 message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
-                for item in url:
+                for item in data:
                     message += (
                         f" - 🚗 {item['name']}\n"
                         f" - قیمت کارخانه: {item['factory_price_txt']}\n"
