@@ -3,8 +3,6 @@ import os
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-from Youtube_bot.bot import TOKEN
-
 API = 'https://tgju.apidarkness.workers.dev'
 
 class Arz:
