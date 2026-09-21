@@ -35,6 +35,8 @@ class Arz:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         name = user.full_name
+        user_id = user.id
+        print(f"User: '{name}', ID: '{user_id}' started the bot.")
 
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
@@ -69,7 +71,8 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمترین: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {item['updated_at']}\n\n"
+                        f" - اپدیت: {item['updated_at']}\n"
+                        "-" * 60 + "\n"
                     )
 
             elif text in '🪙 قیمت سکه 🪙':
@@ -197,11 +200,24 @@ class Arz:
             return
 
 if __name__ == '__main__':
-    token = os.getenv('MY_TOKEN')
+    token = os.getenv('BOT_TOKEN')
+
+    webhook_url = os.getenv('WEBHOOK_URL')
+    if not webhook_url:
+        raise RuntimeError('WEBHOOK_URL is not set. Example: https://your-app-name.onrender.com')
+
+    port = int(os.environ.get('PORT', 10000))
+
     application = ApplicationBuilder().token(token).build()
 
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
 
-    application.run_polling()
+    print(f"Bot is starting with webhook on port {port}...")
+    application.run_webhook(
+        listen='0.0.0.0',
+        port=port,
+        url_path='webhook',
+        webhook_url=f"{webhook_url.rstrip('/')}/webhook"
+    )
