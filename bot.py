@@ -9,9 +9,10 @@ CAR_API = os.getenv('Car_API')
 class Arz:
     def __init__(self):
         self.keyboard = [
+            ['💱 خلاصه قیمت ها 🪙'],
             ['🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰'],
             ['💱 قیمت ارز ها 💱'],
-            ['🚗 قیمت خودرو داخلی 🚗'],
+            ['🚗 خودرو های داخلی 🚗'],
             ['🚗 خودرو های وارداتی 🚗']
         ]
 
@@ -21,6 +22,13 @@ class Arz:
             ['MZDA', 'ولوو', 'آئودی'],
             ['MG', 'BYD', 'GAC'],
             ['چانگان', 'ونوسیا', 'اشکودا'],
+            ['🔙 بازگشت']
+        ]
+
+        self.dakhelikeyboard = [
+            ['سایپا', 'ایران خودرو'],
+            ['مدیران خودرو', 'کرمان موتور'],
+            ['بهمن موتور', 'سایر'], 
             ['🔙 بازگشت']
         ]
 
@@ -35,8 +43,6 @@ class Arz:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         name = user.full_name
-        user_id = user.id
-        print(f"User: '{name}', ID: '{user_id}' started the bot.")
 
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
@@ -62,6 +68,8 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/currency')
+                await sent.delete()
+
                 message = "💱 قیمت ارزها 💱\n\n"
                 for item in data:
                     if item['key'] in exception:
@@ -78,6 +86,8 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/coin')
+                await sent.delete()
+
                 message = "🪙 قیمت سکه 🪙\n\n"
                 for item in data:
                     if item['key'] == 'retail_sekee':
@@ -94,6 +104,8 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/gold')
+                await sent.delete()
+
                 message = "💰 قیمت طلا 💰\n\n"
                 for item in data:
                     if item['key'] == 'geram18' or item['key'] == 'geram24':
@@ -107,40 +119,59 @@ class Arz:
                     if item['key'] == 'geram24':
                         break
 
-            elif text in '🚗 قیمت خودرو داخلی 🚗':
+            elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
+                arz = await self.get_arz(f'{MAIN_API}/currency')
+                coin = await self.get_arz(f'{MAIN_API}/coin')
+                gold = await self.get_arz(f'{MAIN_API}/gold')
 
-                irankhodro = await self.get_car(f'{CAR_API}/dakheli/irankhodro')
+                dollar = arz[0]
+                eurro = arz[1]
+                seke = coin[1]
+                tala_18 = gold[0]
+                tala_24 = gold[2]
+                await sent.delete()
 
-                saipa = await self.get_car(f'{CAR_API}/dakheli/saipa')
+                message = '💱 خلاصه قیمت ها 🪙\n\n'
+                message += (
+                    f" - 💱 {dollar['name']}\n"
+                    f" - قیمت: {dollar['price'] // 10}\n"
+                    f" - کمینه: {dollar['min'] // 10}\n"
+                    f" - بیشینه: {dollar['max'] // 10}\n"
+                    f" - اپدیت: {dollar['updated_at']}\n\n"
+                    f" - 💱 {eurro['name']}\n"
+                    f" - قیمت: {eurro['price'] // 10}\n"
+                    f" - کمینه: {eurro['min'] // 10}\n"
+                    f" - بیشینه: {eurro['max'] // 10}\n"
+                    f" - اپدیت: {eurro['updated_at']}\n\n"
+                    f" - 🪙 {seke['name']}\n"
+                    f" - قیمت: {seke['price'] // 10}\n"
+                    f" - کمینه: {seke['min'] // 10}\n"
+                    f" - بیشینه: {seke['max'] // 10}\n"
+                    f" - اپدیت: {seke['updated_at']}\n\n"
+                    f" - 💰 طلای 18 عیار\n"
+                    f" - قیمت: {tala_18['price'] // 10}\n"
+                    f" - کمینه: {tala_18['min'] // 10}\n"
+                    f" - بیشینه: {tala_18['max'] // 10}\n"
+                    f" - اپدیت: {tala_18['updated_at']}\n\n"
+                    f" - 💰 {tala_24['name']}\n"
+                    f" - قیمت: {tala_24['price'] // 10}\n"
+                    f" - کمینه: {tala_24['min'] // 10}\n"
+                    f" - بیشینه: {tala_24['max'] // 10}\n"
+                    f" - اپدیت: {tala_24['updated_at']}\n\n"
+                )
 
-                message = "🚗 قیمت خودرو های ایران خودرو 🚗\n\n"
-                for item in irankhodro:
-                    message += (
-                        f" - 🚗 {item['name']}\n"
-                        f" - قیمت کارخانه: {item['factory_price_txt']}\n"
-                        f" - قیمت بازار: {item['bazar_price_txt']}\n"
-                        f" - تغییرات 24 ساعته: {item['change_price']}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
-                    )
-                await self.send_long_message(update, message)
-
-                message = "🚗 قیمت خودرو های سایپا 🚗\n\n"
-                for item in saipa:
-                    message += (
-                        f" - 🚗 {item['name']}\n"
-                        f" - قیمت کارخانه: {item['factory_price_txt']}\n"
-                        f" - قیمت بازار: {item['bazar_price_txt']}\n"
-                        f" - تغییرات 24 ساعته: {item['change_price']}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
-                    )
-                await self.send_long_message(update, message)
+            elif text in '🚗 خودرو های داخلی 🚗':
+                await update.message.reply_text(
+                    "🚗 لیست خودرو های داخلی 🚗\nیکی از آنها را انتخاب کنید",
+                    reply_markup=ReplyKeyboardMarkup(self.dakhelikeyboard, resize_keyboard=True)
+                )
                 return
 
             elif text in '🚗 خودرو های وارداتی 🚗':
                 await update.message.reply_text(
-                    "🚗 لیست خودرو های وارداتی 🚗\nلطفا یکی از آنها را انتخاب کنید",
+                    "🚗 لیست خودرو های وارداتی 🚗\nیکی از آنها را انتخاب کنید",
                     reply_markup=ReplyKeyboardMarkup(self.carkeyboard, resize_keyboard=True)
                 )
                 return
@@ -152,9 +183,39 @@ class Arz:
                 )
                 return
 
+            elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
+                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
+                await sent.edit_text('در حال ارسال...')
+
+                cars = {
+                    'ایران خودرو': 'irankhodro',
+                    'سایپا': 'saipa',
+                    'مدیران خودرو': 'modiran',
+                    'کرمان موتور': 'kerman',
+                    'بهمن موتور': 'bahman',
+                    'سایر': 'sayer'
+                }
+
+                url = cars.get(text)
+                data = await self.get_car(f'{CAR_API}/dakheli/{url}')
+                await sent.delete()
+
+                message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
+                for item in url:
+                    message += (
+                        f" - 🚗 {item['name']}\n"
+                        f" - قیمت کارخانه: {item['factory_price_txt']}\n"
+                        f" - قیمت بازار: {item['bazar_price_txt']}\n"
+                        f" - تغییرات 24 ساعته: {item['change_price']}\n"
+                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
+                    )
+                await self.send_long_message(update, message)
+                return
+
             elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 await sent.edit_text('در حال ارسال...')
+
                 cars = {
                     'هیوندای': 'hyundai',
                     'کیا': 'kia',
@@ -174,11 +235,9 @@ class Arz:
                 }
 
                 url = cars.get(text)
-                if url is None:
-                    await update.message.reply_text("❌ خودرو انتخابی نامعتبر است.")
-                    return
-
                 data = await self.get_car(f'{CAR_API}/varedati/{url}')
+                await sent.delete()
+
                 message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
                 for item in data:
                     message += (
@@ -190,10 +249,16 @@ class Arz:
                     )
                 await self.send_long_message(update, message)
                 return
+
+            else:
+                update.message.reply_text('پیام ارسال شده صحیح نمی‌باشد.❌\nلطفا از گزینه های زیر استفاده کنید.',
+                        reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
+                )
+                return
             
             await update.message.reply_text(message)
             return
-        
+
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
