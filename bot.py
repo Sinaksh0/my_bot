@@ -203,8 +203,6 @@ if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
     webhook_url = os.environ.get('WEBHOOK_URL')
-    if not webhook_url:
-        raise RuntimeError('WEBHOOK_URL is not set. Example: https://your-app-name.onrender.com')
 
     port = int(os.environ.get('PORT', 10000))
 
