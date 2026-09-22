@@ -11,7 +11,7 @@ class Arz:
         self.keyboard = [
             ['💱 خلاصه قیمت ها 🪙'],
             ['🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰'],
-            ['💱 قیمت ارز ها 💱'],
+            ['\U0001f4b5 قیمت ارز ها \U0001f4b5'],
             ['🚗 خودرو های داخلی 🚗'],
             ['🚗 خودرو های وارداتی 🚗']
         ]
@@ -76,7 +76,7 @@ class Arz:
                     'price_azn', 'price_amd', 'price_gel', 'price_kgs', 'price_tjs', 'price_tmt']
         
         try:
-            if text in '💱 قیمت ارز ها 💱':
+            if text in '\U0001f4b5 قیمت ارز ها \U0001f4b5':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(f'{MAIN_API}/currency')
                 if not data:
@@ -85,7 +85,7 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                message = "💱 قیمت ارزها 💱\n\n"
+                message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
                 for item in data:
                     if item['key'] in exception:
                         continue
@@ -165,7 +165,7 @@ class Arz:
                     f" - کمینه: {dollar['min'] // 10}\n"
                     f" - بیشینه: {dollar['max'] // 10}\n"
                     f" - اپدیت: {dollar['updated_at']}\n\n"
-                    f" - 💱 {eurro['name']}\n"
+                    f" - 💷 {eurro['name']}\n"
                     f" - قیمت: {eurro['price'] // 10}\n"
                     f" - کمینه: {eurro['min'] // 10}\n"
                     f" - بیشینه: {eurro['max'] // 10}\n"
