@@ -71,10 +71,6 @@ class Arz:
                 reaction=['\U0001f44d']
             )
         
-        exception = ['price_chf', 'price_cny', 'price_jpy', 'price_cad', 'price_krw', 'price_aud', 'price_nzd', 'price_sgd', 'price_inr', 'price_pkr',
-                    'price_syp', 'price_afn', 'price_dkk', 'price_sek', 'price_nok', 'price_sar', 'price_myr', 'price_thb', 'price_hkd', 'price_rub',
-                    'price_azn', 'price_amd', 'price_gel', 'price_kgs', 'price_tjs', 'price_tmt']
-        
         try:
             if text in '💱 قیمت ارز ها 💱':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -85,10 +81,10 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
+                indexs = [0, 9, 1, 2, 3, 4, 21, 22, 23, 24, 25]
                 message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
-                for item in data:
-                    if item['key'] in exception:
-                        continue
+                for idx in indexs:
+                    item = data[idx]
                     message += (
                         f" - {item['name']}\n"
                         f" - قیمت: {item['price'] // 10}\n"
@@ -142,15 +138,17 @@ class Arz:
 
             elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
+                crypto = await self.get_arz(f'{MAIN_API}/crypto')
                 arz = await self.get_arz(f'{MAIN_API}/currency')
                 coin = await self.get_arz(f'{MAIN_API}/coin')
                 gold = await self.get_arz(f'{MAIN_API}/gold')
-                if not arz or not coin or not gold:
+                if not crypto or not arz or not coin or not gold:
                     await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
                     return
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
+                tether = crypto[2]
                 dollar = arz[0]
                 eurro = arz[1]
                 seke = coin[1]
@@ -160,6 +158,9 @@ class Arz:
 
                 message = '💱 خلاصه قیمت ها 🪙\n\n'
                 message += (
+                    f" - \U0001f4b8 {tether['name_fa']}\n"
+                    f" - قیمت: {tether['price_irl'] // 10}\n"
+                    f" - اپدیت: {tether['updated_at']}\n\n"
                     f" - \U0001f4b5 {dollar['name']}\n"
                     f" - قیمت: {dollar['price'] // 10}\n"
                     f" - کمینه: {dollar['min'] // 10}\n"
