@@ -11,7 +11,7 @@ class Arz:
         self.keyboard = [
             ['💱 خلاصه قیمت ها 🪙'],
             ['🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰'],
-            ['\U0001f4b5 قیمت ارز ها \U0001f4b5'],
+            ['💱 قیمت ارز ها 💱'],
             ['🚗 خودرو های داخلی 🚗'],
             ['🚗 خودرو های وارداتی 🚗']
         ]
@@ -76,7 +76,7 @@ class Arz:
                     'price_azn', 'price_amd', 'price_gel', 'price_kgs', 'price_tjs', 'price_tmt']
         
         try:
-            if text in '\U0001f4b5 قیمت ارز ها \U0001f4b5':
+            if text in '💱 قیمت ارز ها 💱':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(f'{MAIN_API}/currency')
                 if not data:
