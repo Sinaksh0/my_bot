@@ -145,7 +145,7 @@ class Arz:
                 arz = await self.get_arz(f'{MAIN_API}/currency')
                 coin = await self.get_arz(f'{MAIN_API}/coin')
                 gold = await self.get_arz(f'{MAIN_API}/gold')
-                if not arz or coin or gold:
+                if not arz or not coin or not gold:
                     await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
                     return
                 await sent.edit_text('در حال ارسال...')
@@ -291,7 +291,7 @@ class Arz:
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
-    webhook_url = 'https://my-bot-rsy5.onrender.com'
+    webhook_url = os.getenv('WEBHOOK_URL')
 
     port = int(os.environ.get('PORT', 10000))
 
@@ -301,7 +301,6 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     
-    print(f"Bot is starting with webhook on port {port}...")
     application.run_webhook(
         listen='0.0.0.0',
         port=port,
