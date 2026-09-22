@@ -28,7 +28,7 @@ class Arz:
         self.dakhelikeyboard = [
             ['سایپا', 'ایران خودرو'],
             ['مدیران خودرو', 'کرمان موتور'],
-            ['بهمن موتور', 'سایر'], 
+            ['سایر', 'بهمن موتور'], 
             ['🔙 بازگشت']
         ]
 
@@ -39,15 +39,22 @@ class Arz:
     async def get_car(self, url):
         response = requests.get(url, timeout=10).json()
         return response['cars']
-    
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         name = user.full_name
 
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f60d']
+            )
+        
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
             reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
-        )
+            )
+
+        return
 
     async def send_long_message(self, update: Update, message: str, chunk_size: int = 3000):
         for i in range(0, len(message), chunk_size):
@@ -59,6 +66,11 @@ class Arz:
         if text is None:
             return
 
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
         exception = ['price_chf', 'price_cny', 'price_jpy', 'price_cad', 'price_krw', 'price_aud', 'price_nzd', 'price_sgd', 'price_inr', 'price_pkr',
                     'price_syp', 'price_afn', 'price_dkk', 'price_sek', 'price_nok', 'price_sar', 'price_myr', 'price_thb', 'price_hkd', 'price_rub',
                     'price_azn', 'price_amd', 'price_gel', 'price_kgs', 'price_tjs', 'price_tmt']
@@ -66,8 +78,11 @@ class Arz:
         try:
             if text in '💱 قیمت ارز ها 💱':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/currency')
+                if not data:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
                 message = "💱 قیمت ارزها 💱\n\n"
@@ -84,8 +99,11 @@ class Arz:
 
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/coin')
+                if not data:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
                 message = "🪙 قیمت سکه 🪙\n\n"
@@ -102,8 +120,11 @@ class Arz:
 
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
                 data = await self.get_arz(f'{MAIN_API}/gold')
+                if not data:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
                 message = "💰 قیمت طلا 💰\n\n"
@@ -121,21 +142,25 @@ class Arz:
 
             elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
                 arz = await self.get_arz(f'{MAIN_API}/currency')
                 coin = await self.get_arz(f'{MAIN_API}/coin')
                 gold = await self.get_arz(f'{MAIN_API}/gold')
+                if not arz or coin or gold:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
+                await sent.delete()
 
                 dollar = arz[0]
                 eurro = arz[1]
                 seke = coin[1]
                 tala_18 = gold[0]
                 tala_24 = gold[2]
-                await sent.delete()
+  
 
                 message = '💱 خلاصه قیمت ها 🪙\n\n'
                 message += (
-                    f" - 💱 {dollar['name']}\n"
+                    f" - \U0001f4b5 {dollar['name']}\n"
                     f" - قیمت: {dollar['price'] // 10}\n"
                     f" - کمینه: {dollar['min'] // 10}\n"
                     f" - بیشینه: {dollar['max'] // 10}\n"
@@ -185,7 +210,6 @@ class Arz:
 
             elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
 
                 cars = {
                     'ایران خودرو': 'irankhodro',
@@ -198,6 +222,10 @@ class Arz:
 
                 url = cars.get(text)
                 data = await self.get_car(f'{CAR_API}/dakheli/{url}')
+                if not data:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
                 message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
@@ -214,7 +242,6 @@ class Arz:
 
             elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                await sent.edit_text('در حال ارسال...')
 
                 cars = {
                     'هیوندای': 'hyundai',
@@ -236,6 +263,10 @@ class Arz:
 
                 url = cars.get(text)
                 data = await self.get_car(f'{CAR_API}/varedati/{url}')
+                if not data:
+                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
+                    return
+                await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
                 message = f"🚗 قیمت خودرو های {text} 🚗\n\n"
@@ -248,12 +279,6 @@ class Arz:
                         f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
                     )
                 await self.send_long_message(update, message)
-                return
-
-            else:
-                update.message.reply_text('پیام ارسال شده صحیح نمی‌باشد.❌\nلطفا از گزینه های زیر استفاده کنید.',
-                        reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
-                )
                 return
             
             await update.message.reply_text(message)
@@ -275,14 +300,11 @@ if __name__ == '__main__':
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-
-    if webhook_url:
-        print(f"Bot is starting with webhook on port {port}...")
-        application.run_webhook(
-            listen='0.0.0.0',
-            port=port,
-            url_path='webhook',
-            webhook_url=f"{webhook_url.rstrip('/')}/webhook"
-        )
-    else:
-        application.run_polling()
+    
+    print(f"Bot is starting with webhook on port {port}...")
+    application.run_webhook(
+        listen='0.0.0.0',
+        port=port,
+        url_path='webhook',
+        webhook_url=f"{webhook_url.rstrip('/')}/webhook"
+    )
