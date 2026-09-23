@@ -132,7 +132,7 @@ class Arz:
             reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
             )
 
-        await update.message.reply_text(f'نسخه: {VERSION}'
+        await update.message.reply_text(f'نسخه: {VERSION}\n'
                 'تغییرات:\n'
                 '- ارسال خودکار لیست قیمت ها\n'
                 '- رفع باگ ها'
