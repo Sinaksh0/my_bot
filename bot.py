@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
-VERSION = '0.5.1'
+VERSION = '0.5.0'
 
 class Arz:
     def __init__(self):
@@ -46,13 +46,18 @@ class Arz:
         if context.bot_data.get('last_version') == VERSION:
             return
 
-        await context.bot.send_message(
-            chat_id=1823652124,
-            text=f'آپدیت نسخه {VERSION} منتشر شد.\n'
-                 'ارسال خودکار لیست قیمت ها\n'
-                 'رفع باگ ها\n'
-                 'برای اعمال آپدیت مجدد /start کنید.'
-        )
+        started_users = context.bot_data.get('started_users', set())
+        if not started_users:
+            context.bot_data['last_version'] = VERSION
+            return
+
+        for chat_id in started_users:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
+                     '- برای اعمال آپدیت مجدد /start کنید.'
+            )
+
         context.bot_data['last_version'] = VERSION
         return
 
@@ -102,17 +107,18 @@ class Arz:
             f" - بیشینه: {tala_24['max'] // 10}\n"
             f" - اپدیت: {tala_24['updated_at']}\n\n"
         )
-        await context.bot.send_message(chat_id=context.job.chat_id, text=message)
-        return None
-        
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if "last_version" not in context.bot_data:
-            context.bot_data['last_version'] = VERSION
 
+        if context.job is not None:
+            await context.bot.send_message(chat_id=context.job.chat_id, text=message)
+        return message
+
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         hours = [0, 12, 17, 21]
         for h in hours:
             context.job_queue.run_daily(self.send_daily, time=time(h, 0, 0), chat_id=update.effective_chat.id)
-            
+
+        context.bot_data.setdefault('started_users', set()).add(update.effective_chat.id)
+
         user = update.effective_user
         name = user.full_name
 
@@ -126,6 +132,11 @@ class Arz:
             reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
             )
 
+        await update.message.reply_text(f'نسخه: {VERSION}'
+                'تغییرات:\n'
+                '- ارسال خودکار لیست قیمت ها\n'
+                '- رفع باگ ها'
+            )
         return
 
     async def send_long_message(self, update: Update, message: str, chunk_size: int = 3000):
@@ -216,6 +227,7 @@ class Arz:
                     return
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
+                await update.message.reply_text(result)
                 return
             
             elif text in '🚗 خودرو های داخلی 🚗':
