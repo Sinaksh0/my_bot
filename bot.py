@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 class Arz:
     def __init__(self):
