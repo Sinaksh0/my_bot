@@ -42,16 +42,18 @@ class Arz:
         response = requests.get(url, timeout=10).json()
         return response['cars']
 
-    async def check_update(self, context):
-        current_version = context.bot_data.get('last_version')
-        if current_version != VERSION:
-            await context.bot.send_message(chat_id=1823652124,
-                text=f'آپدیت نسخه {VERSION} منتشر شد.\n'
-                'ارسال خودکار لیست قیمت ها'
-                'رفع باگ ها'
-                'برای اعمال آپدیت مجدد \\start کنید.'
-            )
-            context.bot_data['last_version'] = VERSION
+    async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
+        if context.bot_data.get('last_version') == VERSION:
+            return
+
+        await context.bot.send_message(
+            chat_id=1823652124,
+            text=f'آپدیت نسخه {VERSION} منتشر شد.\n'
+                 'ارسال خودکار لیست قیمت ها\n'
+                 'رفع باگ ها\n'
+                 'برای اعمال آپدیت مجدد /start کنید.'
+        )
+        context.bot_data['last_version'] = VERSION
         return
 
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
