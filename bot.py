@@ -1,10 +1,12 @@
 import requests
 import os
+from datetime import time
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
+VERSION = '0.5.0'
 
 class Arz:
     def __init__(self):
@@ -40,7 +42,75 @@ class Arz:
         response = requests.get(url, timeout=10).json()
         return response['cars']
 
+    async def check_update(self, context):
+        current_version = context.bot_data.get('last_version')
+        if current_version != VERSION:
+            await context.bot.send_message(chat_id=1823652124,
+                text=f'آپدیت نسخه {VERSION} منتشر شد.\n'
+                'ارسال خودکار لیست قیمت ها'
+                'رفع باگ ها'
+                'برای اعمال آپدیت مجدد \\start کنید.'
+            )
+            context.bot_data['last_version'] = VERSION
+        return
+
+    async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
+        crypto = await self.get_arz(f'{MAIN_API}/crypto')
+        arz = await self.get_arz(f'{MAIN_API}/currency')
+        coin = await self.get_arz(f'{MAIN_API}/coin')
+        gold = await self.get_arz(f'{MAIN_API}/gold')
+        if not crypto or not arz or not coin or not gold:
+            return False
+
+        tether = crypto[2]
+        dollar = arz[0]
+        eurro = arz[1]
+        seke = coin[1]
+        tala_18 = gold[0]
+        tala_24 = gold[2]
+
+        message = '💱 خلاصه قیمت ها 🪙\n\n'
+        message += (
+            f" - \U0001f4b8 {tether['name_fa']}\n"
+            f" - قیمت: {tether['price_irl'] // 10}\n"
+            f" - اپدیت: {tether['updated_at']}\n\n"
+            f" - \U0001f4b5 {dollar['name']}\n"
+            f" - قیمت: {dollar['price'] // 10}\n"
+            f" - کمینه: {dollar['min'] // 10}\n"
+            f" - بیشینه: {dollar['max'] // 10}\n"
+            f" - اپدیت: {dollar['updated_at']}\n\n"
+            f" - 💷 {eurro['name']}\n"
+            f" - قیمت: {eurro['price'] // 10}\n"
+            f" - کمینه: {eurro['min'] // 10}\n"
+            f" - بیشینه: {eurro['max'] // 10}\n"
+            f" - اپدیت: {eurro['updated_at']}\n\n"
+            f" - 🪙 {seke['name']}\n"
+            f" - قیمت: {seke['price'] // 10}\n"
+            f" - کمینه: {seke['min'] // 10}\n"
+            f" - بیشینه: {seke['max'] // 10}\n"
+            f" - اپدیت: {seke['updated_at']}\n\n"
+            f" - 💰 طلای 18 عیار\n"
+            f" - قیمت: {tala_18['price'] // 10}\n"
+            f" - کمینه: {tala_18['min'] // 10}\n"
+            f" - بیشینه: {tala_18['max'] // 10}\n"
+            f" - اپدیت: {tala_18['updated_at']}\n\n"
+            f" - 💰 {tala_24['name']}\n"
+            f" - قیمت: {tala_24['price'] // 10}\n"
+            f" - کمینه: {tala_24['min'] // 10}\n"
+            f" - بیشینه: {tala_24['max'] // 10}\n"
+            f" - اپدیت: {tala_24['updated_at']}\n\n"
+        )
+        await context.bot.send_message(chat_id=context.job.chat_id, text=message)
+        return None
+        
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if "last_version" not in context.bot_data:
+            context.bot_data['last_version'] = VERSION
+
+        hours = [0, 12, 17, 21]
+        for h in hours:
+            context.job_queue.run_daily(self.send_daily, time=time(h, 0, 0), chat_id=update.effective_chat.id)
+            
         user = update.effective_user
         name = user.full_name
 
@@ -88,7 +158,7 @@ class Arz:
                     message += (
                         f" - {item['name']}\n"
                         f" - قیمت: {item['price'] // 10}\n"
-                        f" - کمترین: {item['min'] // 10}\n"
+                        f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
                         f" - اپدیت: {item['updated_at']}\n\n"
                     )
@@ -109,7 +179,7 @@ class Arz:
                     message += (
                         f" - 🪙 {item['name']}\n"
                         f" - قیمت: {item['price'] // 10}\n"
-                        f" - کمترین: {item['min'] // 10}\n"
+                        f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
                         f" - اپدیت: {item['updated_at']}\n\n"
                     )
@@ -138,56 +208,14 @@ class Arz:
 
             elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                crypto = await self.get_arz(f'{MAIN_API}/crypto')
-                arz = await self.get_arz(f'{MAIN_API}/currency')
-                coin = await self.get_arz(f'{MAIN_API}/coin')
-                gold = await self.get_arz(f'{MAIN_API}/gold')
-                if not crypto or not arz or not coin or not gold:
+                result = await self.send_daily(context)
+                if result is False:
                     await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
                     return
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
-
-                tether = crypto[2]
-                dollar = arz[0]
-                eurro = arz[1]
-                seke = coin[1]
-                tala_18 = gold[0]
-                tala_24 = gold[2]
-  
-
-                message = '💱 خلاصه قیمت ها 🪙\n\n'
-                message += (
-                    f" - \U0001f4b8 {tether['name_fa']}\n"
-                    f" - قیمت: {tether['price_irl'] // 10}\n"
-                    f" - اپدیت: {tether['updated_at']}\n\n"
-                    f" - \U0001f4b5 {dollar['name']}\n"
-                    f" - قیمت: {dollar['price'] // 10}\n"
-                    f" - کمینه: {dollar['min'] // 10}\n"
-                    f" - بیشینه: {dollar['max'] // 10}\n"
-                    f" - اپدیت: {dollar['updated_at']}\n\n"
-                    f" - 💷 {eurro['name']}\n"
-                    f" - قیمت: {eurro['price'] // 10}\n"
-                    f" - کمینه: {eurro['min'] // 10}\n"
-                    f" - بیشینه: {eurro['max'] // 10}\n"
-                    f" - اپدیت: {eurro['updated_at']}\n\n"
-                    f" - 🪙 {seke['name']}\n"
-                    f" - قیمت: {seke['price'] // 10}\n"
-                    f" - کمینه: {seke['min'] // 10}\n"
-                    f" - بیشینه: {seke['max'] // 10}\n"
-                    f" - اپدیت: {seke['updated_at']}\n\n"
-                    f" - 💰 طلای 18 عیار\n"
-                    f" - قیمت: {tala_18['price'] // 10}\n"
-                    f" - کمینه: {tala_18['min'] // 10}\n"
-                    f" - بیشینه: {tala_18['max'] // 10}\n"
-                    f" - اپدیت: {tala_18['updated_at']}\n\n"
-                    f" - 💰 {tala_24['name']}\n"
-                    f" - قیمت: {tala_24['price'] // 10}\n"
-                    f" - کمینه: {tala_24['min'] // 10}\n"
-                    f" - بیشینه: {tala_24['max'] // 10}\n"
-                    f" - اپدیت: {tala_24['updated_at']}\n\n"
-                )
-
+                return
+            
             elif text in '🚗 خودرو های داخلی 🚗':
                 await update.message.reply_text(
                     "🚗 لیست خودرو های داخلی 🚗\nیکی از آنها را انتخاب کنید",
@@ -293,15 +321,18 @@ if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
     webhook_url = os.getenv('WEBHOOK_URL')
+    if not webhook_url:
+        raise RuntimeError('WEBHOOK_URL is not set. Example: https://your-app-name.onrender.com')
 
     port = int(os.environ.get('PORT', 10000))
 
     application = ApplicationBuilder().token(token).build()
-
+        
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    
+    application.job_queue.run_once(arz.check_update, when=5)
+
     application.run_webhook(
         listen='0.0.0.0',
         port=port,
