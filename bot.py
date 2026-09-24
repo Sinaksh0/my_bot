@@ -120,7 +120,7 @@ class Arz:
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
-                reaction=['\u2764\ufe0f']
+                reaction=['\U0001f60d']
             )
         
         await update.message.reply_text(
