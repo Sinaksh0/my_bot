@@ -80,11 +80,11 @@ class Arz:
             f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
             f" - 🪙 قیمت سکه بهار آزادی\n"
             f" - قیمت: {seke['price']} {seke['currency']}\n"
-            f" - حباب قیمتی: {[seke['bubble']['amount']]}\n"
+            f" - حباب قیمتی: {seke['bubble']['amount']}\n"
             f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
             f" - 💰 طلای 18 عیار\n"
             f" - قیمت: {tala_18['price']} {tala_18['currency']}\n"
-            f" - حباب قیمتی: {[tala_18['bubble']['amount']]}\n"
+            f" - حباب قیمتی: {tala_18['bubble']['amount']}\n"
             f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
         )
 
@@ -211,7 +211,7 @@ class Arz:
                     message += (
                         f" - 🪙 {item['name_persian']}\n"
                         f" - قیمت: {item['price']} {item['currency']}\n"
-                        f" - حباب قیمتی: {[item['bubble']['amount']]}\n"
+                        f" - حباب قیمتی: {item['bubble']['amount']}\n"
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
 
@@ -228,16 +228,13 @@ class Arz:
                 message += (
                     f" - 💰 طلای 18 عیار\n"
                     f" - قیمت: {tala_18['price']} {tala_18['currency']}\n"
-                    f" - حباب قیمتی: {[tala_18['bubble']['amount']]}\n"
+                    f" - حباب قیمتی: {tala_18['bubble']['amount']}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
 
             elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 result = await self.send_daily(context)
-                if result is False:
-                    await sent.edit_text('خطایی رخ داده است❌\nلطفا بعدا تلاش کنید')
-                    return
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
                 await update.message.reply_text(result)
@@ -345,13 +342,6 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-
-async def post_init(application):
-    await application.bot.set_my_commands([
-        BotCommand('start', 'شروع و نمایش منو'),
-        BotCommand('set', 'تنظیم ساعت ارسال خودکار'),
-        BotCommand('help', 'راهنمای دستورات')
-    ])
         
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -364,14 +354,11 @@ if __name__ == '__main__':
 
     application = ApplicationBuilder().token(token).build()
 
-    application.post_init = post_init
-
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("set", arz.set_hours))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
