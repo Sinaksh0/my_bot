@@ -2,7 +2,7 @@ import requests
 import os
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 MAIN_API = os.getenv('Main_API')
