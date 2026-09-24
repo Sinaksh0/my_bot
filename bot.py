@@ -45,20 +45,11 @@ class Arz:
         return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
-        if context.bot_data.get('last_version') == VERSION:
-            return
-
-        started_users = context.bot_data.get('started_users', set())
-        if not started_users:
-            context.bot_data['last_version'] = VERSION
-            return
-
-        for chat_id in started_users:
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
-                     '- برای اعمال آپدیت مجدد /start کنید.'
-            )
+        await context.bot.send_message(
+            chat_id=1823652124,
+            text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
+                 '- برای اعمال آپدیت مجدد /start کنید.'
+        )
 
         context.bot_data['last_version'] = VERSION
         return
