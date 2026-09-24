@@ -113,12 +113,6 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id not in self.users:
-            self.users.append(update.effective_chat.id)
-        json_data = json.dumps({"users": self.users}, indent=4)
-        encoded = base64.b64decode(json_data.encode()).decode()
-        self.upload_github(encoded)
-
         user = update.effective_user
         name = user.full_name
 
