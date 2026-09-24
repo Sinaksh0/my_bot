@@ -2,7 +2,7 @@ import requests
 import os
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
-from telegram import Update, ReplyKeyboardMarkup, BotCommand
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 MAIN_API = os.getenv('Main_API')
@@ -379,13 +379,6 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-
-async def post_init(application):
-    await application.bot.set_my_commands([
-        BotCommand('start', 'شروع و نمایش منو'),
-        BotCommand('set', 'تنظیم ساعت ارسال خودکار'),
-        BotCommand('help', 'دستور عمل های ربات')
-    ])
         
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -399,7 +392,6 @@ if __name__ == '__main__':
     application = ApplicationBuilder().token(token).build()
 
     arz = Arz()
-    application.post_init = post_init
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("set", arz.set_hours))
     application.add_handler(CommandHandler("help", arz.help))
