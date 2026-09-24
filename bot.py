@@ -93,9 +93,6 @@ class Arz:
         return message
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id not in self.users:
-            self.users.append(update.effective_chat.id)
-        self.save_state()
         user = update.effective_user
         name = user.full_name
 
@@ -113,7 +110,7 @@ class Arz:
                 'تغییرات:\n'
                 '- تنظیم ساعت ارسال خودکار توسط کاربر\n'
                 '- اضافه شدن کامند /set برای تنظیم ساعت ارسال خودکار\n'
-                '- آپدیت هر دقیقه لیست با هر درخواست\n'
+                '- آپدیت هر لحظه لیست با هر درخواست\n'
             )
         return
     
