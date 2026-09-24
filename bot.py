@@ -115,31 +115,26 @@ class Arz:
         return message
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        try:
-            user = update.effective_user
-            name = user.full_name
+        user = update.effective_user
+        name = user.full_name
 
-            await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                    message_id=update.message.message_id,
-                    reaction=['\u2764\ufe0f']
-                )
-            
-            await update.message.reply_text(
-                f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
-                reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
-                )
-
-            await update.message.reply_text(f'نسخه: {VERSION}\n\n'
-                    'تغییرات:\n'
-                    '- تنظیم ساعت ارسال خودکار توسط کاربر\n'
-                    '- اضافه شدن کامند /set برای تنظیم ساعت ارسال خودکار\n'
-                    '- آپدیت هر دقیقه لیست با هر درخواست\n'
-                )
-            return
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\u2764\ufe0f']
+            )
         
-        except Exception as e:
-            update.message.reply_text(e)
-            return
+        await update.message.reply_text(
+            f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
+            reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
+            )
+
+        await update.message.reply_text(f'نسخه: {VERSION}\n\n'
+                'تغییرات:\n'
+                '- تنظیم ساعت ارسال خودکار توسط کاربر\n'
+                '- اضافه شدن کامند /set برای تنظیم ساعت ارسال خودکار\n'
+                '- آپدیت هر دقیقه لیست با هر درخواست\n'
+            )
+        return
     
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
