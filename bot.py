@@ -44,13 +44,26 @@ class Arz:
 
     def load_state(self):
         url = 'https://raw.githubusercontent.com/Sinaksh0/my_bot/refs/heads/main/users.json'
-        response = requests.get(url).text
-        users = json.loads(response)
-        if not users:
+        try:
+            response = requests.get(url, timeout=15)
+            if response.status_code != 200:
+                return []
+
+            body = response.text.strip()
+            if not body:
+                return []
+
+            data = json.loads(body)
+            if isinstance(data, list):
+                return data
             return []
-        return users
+        except (requests.RequestException, ValueError):
+            return []
     
     def upload_github(self, encode):
+        if not GIT:
+            return {'error': 'GITHUB_TOKEN is not set'}
+
         url = 'https://api.github.com/repos/Sinaksh0/my_bot/contents/users.json'
 
         headers = {
@@ -58,17 +71,25 @@ class Arz:
             "Accept": "application/vnd.github+json"
         }
 
-        get_file = requests.get(url, headers=headers).json()
-        sha = get_file.get("sha")
+        try:
+            get_file = requests.get(url, headers=headers, timeout=15)
+            if get_file.status_code == 200:
+                sha = get_file.json().get("sha")
+            else:
+                sha = None
 
-        data = {
-            "message": "Auto updating",
-            "content": encode,
-            "sha": sha
-        }
+            data = {
+                "message": "Auto updating",
+                "content": encode,
+            }
 
-        response = requests.put(url, json=data, headers=headers)
-        return response.json()
+            if sha is not None:
+                data["sha"] = sha
+
+            response = requests.put(url, json=data, headers=headers, timeout=15)
+            return response.json()
+        except requests.RequestException as exc:
+            return {'error': str(exc)}
 
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
