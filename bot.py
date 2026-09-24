@@ -1,12 +1,15 @@
+import asyncio
 import requests
 import os
-from datetime import time
-from telegram import Update, ReplyKeyboardMarkup
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
+from telegram import Update, ReplyKeyboardMarkup, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
-VERSION = '0.5.0'
+VERSION = '0.6.0'
+tehran = ZoneInfo("Asia/Tehran")
 
 class Arz:
     def __init__(self):
@@ -80,32 +83,32 @@ class Arz:
         message += (
             f" - \U0001f4b8 {tether['name_fa']}\n"
             f" - قیمت: {tether['price_irl'] // 10}\n"
-            f" - اپدیت: {tether['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
             f" - \U0001f4b5 {dollar['name']}\n"
             f" - قیمت: {dollar['price'] // 10}\n"
             f" - کمینه: {dollar['min'] // 10}\n"
             f" - بیشینه: {dollar['max'] // 10}\n"
-            f" - اپدیت: {dollar['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
             f" - 💷 {eurro['name']}\n"
             f" - قیمت: {eurro['price'] // 10}\n"
             f" - کمینه: {eurro['min'] // 10}\n"
             f" - بیشینه: {eurro['max'] // 10}\n"
-            f" - اپدیت: {eurro['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
             f" - 🪙 {seke['name']}\n"
             f" - قیمت: {seke['price'] // 10}\n"
             f" - کمینه: {seke['min'] // 10}\n"
             f" - بیشینه: {seke['max'] // 10}\n"
-            f" - اپدیت: {seke['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
             f" - 💰 طلای 18 عیار\n"
             f" - قیمت: {tala_18['price'] // 10}\n"
             f" - کمینه: {tala_18['min'] // 10}\n"
             f" - بیشینه: {tala_18['max'] // 10}\n"
-            f" - اپدیت: {tala_18['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
             f" - 💰 {tala_24['name']}\n"
             f" - قیمت: {tala_24['price'] // 10}\n"
             f" - کمینه: {tala_24['min'] // 10}\n"
             f" - بیشینه: {tala_24['max'] // 10}\n"
-            f" - اپدیت: {tala_24['updated_at']}\n\n"
+            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
         )
 
         if context.job is not None:
@@ -113,10 +116,6 @@ class Arz:
         return message
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        hours = [0, 12, 17, 21]
-        for h in hours:
-            context.job_queue.run_daily(self.send_daily, time=time(h, 0, 0), chat_id=update.effective_chat.id)
-
         context.bot_data.setdefault('started_users', set()).add(update.effective_chat.id)
 
         user = update.effective_user
@@ -124,7 +123,7 @@ class Arz:
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
-                reaction=['\U0001f60d']
+                reaction=['❤️']
             )
         
         await update.message.reply_text(
@@ -132,11 +131,46 @@ class Arz:
             reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
             )
 
-        await update.message.reply_text(f'نسخه: {VERSION}\n'
+        await update.message.reply_text(f'نسخه: {VERSION}\n\n'
                 'تغییرات:\n'
-                '- ارسال خودکار لیست قیمت ها\n'
-                '- رفع باگ ها'
+                '- تنظیم ساعت ارسال خودکار توسط کاربر\n'
+                '- اضافه شدن کامند /set برای تنظیم ساعت ارسال خودکار\n'
+                '- آپدیت هر دقیقه لیست با هر درخواست\n'
             )
+        return
+    
+    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        text = (
+            '📋 دستورات ربات:\n\n'
+            '/start - شروع و نمایش منو\n'
+            '/set 03 10 18 - تنظیم ساعت ارسال خودکار\n\n'
+            'یا از دکمه‌های زیر صفحه برای دریافت قیمت‌ها استفاده کنید.'
+        )
+        await update.message.reply_text(text)
+
+    async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) == 0:
+            await update.message.reply_text('لطفا ساعت ها را وارد کنید مانند:\n/set 03 10 18 ...')
+            return
+
+        try:
+            hours = list(int(h) for h in context.args)
+        except ValueError:
+            await update.message.reply_text('ساعت ها باید عدد باشد!')
+            return
+        for h in hours:
+            if not 0 <= h <=23:
+                await update.message.reply_text("ساعت باید بین 0 تا 23 باشد.")
+                return
+            
+        job_name = f'chat_id_{update.effective_chat.id}'
+
+        for job in context.job_queue.get_jobs_by_name(job_name):
+            job.schedule_removal()
+
+        for h in hours:
+            context.job_queue.run_daily(self.send_daily, time=time(h, 0, tzinfo=tehran), chat_id=update.effective_chat.id, name=job_name)
+        await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {hours} انجام شد')
         return
 
     async def send_long_message(self, update: Update, message: str, chunk_size: int = 3000):
@@ -173,7 +207,7 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {item['updated_at']}\n\n"
+                        f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
                     )
 
             elif text in '🪙 قیمت سکه 🪙':
@@ -194,7 +228,7 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {item['updated_at']}\n\n"
+                        f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
                     )
 
             elif text in '💰 قیمت طلا 💰':
@@ -214,7 +248,7 @@ class Arz:
                             f" - قیمت: {item['price'] // 10}\n"
                             f" - کمینه: {item['min'] // 10}\n"
                             f" - بیشینه: {item['max'] // 10}\n"
-                            f" - اپدیت: {item['updated_at']}\n\n"
+                            f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
                         )
                     if item['key'] == 'geram24':
                         break
@@ -278,7 +312,8 @@ class Arz:
                         f" - قیمت کارخانه: {item['factory_price_txt']}\n"
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
                         f" - تغییرات 24 ساعته: {item['change_price']}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
+                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
+                        f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
                     )
                 await self.send_long_message(update, message)
                 return
@@ -319,7 +354,8 @@ class Arz:
                         f" - قیمت کارخانه: {item['factory_price_txt']}\n"
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
                         f" - تغییرات 24 ساعته: {item['change_price']}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n\n"
+                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
+                        f" - اپدیت: {datetime.now().strftime("%H:%M:%S")}\n\n"
                     )
                 await self.send_long_message(update, message)
                 return
@@ -341,11 +377,20 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     application = ApplicationBuilder().token(token).build()
-        
+
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
+    application.add_handler(CommandHandler("set", arz.set_hours))
+    application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.job_queue.run_once(arz.check_update, when=5)
+
+    commands = [
+        BotCommand('start', 'شروع و نمایش منو'),
+        BotCommand('set', 'تنظیم ساعت ارسال خودکار'),
+        BotCommand('help', 'دستور عمل های ربات')
+    ]
+    asyncio.run(application.bot.set_my_commands(commands))
 
     application.run_webhook(
         listen='0.0.0.0',
