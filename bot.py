@@ -82,32 +82,32 @@ class Arz:
         message += (
             f" - \U0001f4b8 {tether['name_fa']}\n"
             f" - قیمت: {tether['price_irl'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
             f" - \U0001f4b5 {dollar['name']}\n"
             f" - قیمت: {dollar['price'] // 10}\n"
             f" - کمینه: {dollar['min'] // 10}\n"
             f" - بیشینه: {dollar['max'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
             f" - 💷 {eurro['name']}\n"
             f" - قیمت: {eurro['price'] // 10}\n"
             f" - کمینه: {eurro['min'] // 10}\n"
             f" - بیشینه: {eurro['max'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
             f" - 🪙 {seke['name']}\n"
             f" - قیمت: {seke['price'] // 10}\n"
             f" - کمینه: {seke['min'] // 10}\n"
             f" - بیشینه: {seke['max'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
             f" - 💰 طلای 18 عیار\n"
             f" - قیمت: {tala_18['price'] // 10}\n"
             f" - کمینه: {tala_18['min'] // 10}\n"
             f" - بیشینه: {tala_18['max'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
             f" - 💰 {tala_24['name']}\n"
             f" - قیمت: {tala_24['price'] // 10}\n"
             f" - کمینه: {tala_24['min'] // 10}\n"
             f" - بیشینه: {tala_24['max'] // 10}\n"
-            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
         )
 
         if context.job is not None:
@@ -153,6 +153,11 @@ class Arz:
         return
     
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
         text = (
             '📋 دستورات ربات:\n\n'
             '/start - شروع و نمایش منو\n'
@@ -162,6 +167,11 @@ class Arz:
         await update.message.reply_text(text)
 
     async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
         if len(context.args) == 0:
             await update.message.reply_text('لطفا ساعت ها را وارد کنید مانند:\n/set 03 10 18 ...')
             return
@@ -220,7 +230,7 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+                        f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
                     )
 
             elif text in '🪙 قیمت سکه 🪙':
@@ -241,7 +251,7 @@ class Arz:
                         f" - قیمت: {item['price'] // 10}\n"
                         f" - کمینه: {item['min'] // 10}\n"
                         f" - بیشینه: {item['max'] // 10}\n"
-                        f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+                        f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
                     )
 
             elif text in '💰 قیمت طلا 💰':
@@ -261,7 +271,7 @@ class Arz:
                             f" - قیمت: {item['price'] // 10}\n"
                             f" - کمینه: {item['min'] // 10}\n"
                             f" - بیشینه: {item['max'] // 10}\n"
-                            f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+                            f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
                         )
                     if item['key'] == 'geram24':
                         break
@@ -326,7 +336,7 @@ class Arz:
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
                         f" - تغییرات 24 ساعته: {item['change_price']}\n"
                         f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
-                        f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+                        f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
                     )
                 await self.send_long_message(update, message)
                 return
@@ -368,7 +378,7 @@ class Arz:
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
                         f" - تغییرات 24 ساعته: {item['change_price']}\n"
                         f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
-                        f" - اپدیت: {datetime.now().strftime('%H:%M:%S')}\n\n"
+                        f" - اپدیت: {datetime.now(tehran).strftime('%H:%M:%S')}\n\n"
                     )
                 await self.send_long_message(update, message)
                 return
@@ -379,6 +389,13 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
+
+async def post_init(application):
+    await application.bot.set_my_commands([
+        BotCommand('start', 'شروع و نمایش منو'),
+        BotCommand('set', 'تنظیم ساعت ارسال خودکار'),
+        BotCommand('help', 'راهنمای دستورات')
+    ])
         
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -390,6 +407,8 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     application = ApplicationBuilder().token(token).build()
+
+    application.post_init = post_init
 
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
