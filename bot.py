@@ -15,7 +15,6 @@ VERSION = '0.8.0'
 class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
-        self.users = self.load_state()
         self.url = MAIN_API
 
         self.keyboard = [
@@ -118,6 +117,7 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        self.users = self.load_state()
         chat_id = update.effective_chat.id
 
         if chat_id not in self.users:
