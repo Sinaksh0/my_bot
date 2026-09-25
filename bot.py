@@ -9,7 +9,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
-GIT = "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"
+GIT = os.getenv('GIT_Token')
 VERSION = '0.6.1'
 
 class Arz:
@@ -67,8 +67,7 @@ class Arz:
         url = 'https://api.github.com/repos/Sinaksh0/my_bot/contents/users.json'
 
         headers = {
-            "Authorization": f"Bearer {GIT}",
-            "Accept": "application/vnd.github+json"
+            "Authorization": f"Bearer {GIT}"
         }
 
         try:
