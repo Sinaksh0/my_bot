@@ -53,11 +53,17 @@ class Arz:
             if not body:
                 return []
 
-            data = json.loads(body)
-            if isinstance(data, list):
-                return data
-            return []
-        except (requests.RequestException, ValueError):
+            try:
+                data = json.loads(body)
+            except ValueError:
+                try:
+                    decoded = base64.b64decode(body)
+                    data = json.loads(decoded.decode('utf-8'))
+                except Exception:
+                    return []
+
+            return data["users"]
+        except requests.RequestException:
             return []
     
     def upload_github(self, data):
@@ -67,15 +73,20 @@ class Arz:
         url = 'https://api.github.com/repos/Sinaksh0/my_bot/contents/users.json'
 
         headers = {
-            "Authorization": f"Bearer {GIT}"
+            "Authorization": f"Bearer {GIT}",
+            "Accept": "application/vnd.github+json"
         }
 
         try:
             get_file = requests.get(url, headers=headers, timeout=15)
             sha = get_file.json().get("sha") if get_file.status_code == 200 else None
 
-            payload = json.dumps(data, ensure_ascii=False)
-            encoded = base64.b64encode(payload.encode('utf-8')).decode('utf-8')
+            payload = json.dumps({
+                "count": len(data),
+                "users": data
+                }, 
+                ensure_ascii=False).encode('utf-8')
+            encoded = base64.b64encode(payload).decode('utf-8')
 
             request_data = {
                 "message": "Auto updating",
