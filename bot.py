@@ -378,7 +378,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.job_queue.run_once(arz.check_update)
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
