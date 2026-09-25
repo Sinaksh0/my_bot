@@ -60,7 +60,7 @@ class Arz:
         except (requests.RequestException, ValueError):
             return []
     
-    def upload_github(self, encode):
+    def upload_github(self, data):
         if not GIT:
             return {'error': 'GITHUB_TOKEN is not set'}
 
@@ -73,20 +73,24 @@ class Arz:
 
         try:
             get_file = requests.get(url, headers=headers, timeout=15)
-            if get_file.status_code == 200:
-                sha = get_file.json().get("sha")
-            else:
-                sha = None
+            sha = get_file.json().get("sha") if get_file.status_code == 200 else None
 
-            data = {
+            payload = json.dumps(data, ensure_ascii=False)
+            encoded = base64.b64encode(payload.encode('utf-8')).decode('utf-8')
+
+            request_data = {
                 "message": "Auto updating",
-                "content": encode,
+                "content": encoded,
+                "branch": "main",
+                "committer": {
+                    'name': 'Sinaksh0'
+                }
             }
 
             if sha is not None:
-                data["sha"] = sha
+                request_data["sha"] = sha
 
-            response = requests.put(url, json=data, headers=headers, timeout=15)
+            response = requests.put(url, json=request_data, headers=headers, timeout=15)
             return response.json()
         except requests.RequestException as exc:
             return {'error': str(exc)}
