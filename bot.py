@@ -184,7 +184,7 @@ class Arz:
                 await sent.delete()
 
                 indexs = [0, 6, 1, 2, 3, 4, 9, 15, 19]
-                message = "<h1>قیمت لحظه‌ای بازار ارز</h1>\n\n"
+                message = "<b>قیمت لحظه‌ای بازار ارز</b>\n\n"
                 message += "     <blockquote>\U0001f4b5 قیمت ارزها \U0001f4b5</blockquote>     \n"
                 for idx in indexs:
                     item = data[idx]
