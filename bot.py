@@ -191,7 +191,7 @@ class Arz:
                 for idx in indexs:
                     item = data[idx]
                     row.append([
-                        item[item['sell_price']['value']],
+                        item['sell_price']['value'],
                         item['name_persian']
                     ])
 
