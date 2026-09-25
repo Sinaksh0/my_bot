@@ -9,7 +9,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
-GIT = os.getenv('GIT_Token')
+GIT = "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"
 VERSION = '0.6.1'
 
 class Arz:
