@@ -53,22 +53,14 @@ class Arz:
             if not body:
                 return []
 
-            try:
-                data = json.loads(body)
-            except ValueError:
-                try:
-                    decoded = base64.b64decode(body)
-                    data = json.loads(decoded.decode('utf-8'))
-                except Exception:
-                    return []
-
+            data = json.loads(body)
             if isinstance(data, list):
                 return data
             return []
-        except requests.RequestException:
+        except (requests.RequestException, ValueError):
             return []
     
-    def upload_github(self, data):
+    def upload_github(self, encode):
         if not GIT:
             return {'error': 'GITHUB_TOKEN is not set'}
 
@@ -81,20 +73,20 @@ class Arz:
 
         try:
             get_file = requests.get(url, headers=headers, timeout=15)
-            sha = get_file.json().get("sha") if get_file.status_code == 200 else None
+            if get_file.status_code == 200:
+                sha = get_file.json().get("sha")
+            else:
+                sha = None
 
-            payload = json.dumps(data, ensure_ascii=False)
-            encoded = base64.b64encode(payload.encode('utf-8')).decode('utf-8')
-
-            request_data = {
+            data = {
                 "message": "Auto updating",
-                "content": encoded,
+                "content": encode,
             }
 
             if sha is not None:
-                request_data["sha"] = sha
+                data["sha"] = sha
 
-            response = requests.put(url, json=request_data, headers=headers, timeout=15)
+            response = requests.put(url, json=data, headers=headers, timeout=15)
             return response.json()
         except requests.RequestException as exc:
             return {'error': str(exc)}
@@ -121,12 +113,12 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        chat_id = update.effective_chat.id
-
-        if chat_id not in self.users:
-            self.users.append(chat_id)
-            self.upload_github(self.users)
-
+        if update.effective_chat.id not in self.users:
+            self.users.append(update.effective_chat.id)
+            payload = json.dumps(self.users, ensure_ascii=False).encode("utf-8")
+            encoded = base64.b64encode(payload).decode("utf-8")
+            self.upload_github(encoded)
+            
         user = update.effective_user
         name = user.full_name
 
@@ -184,11 +176,14 @@ class Arz:
                 await sent.delete()
 
                 indexs = [0, 6, 1, 2, 3, 4, 9, 15, 19]
-                message = "<h1>قیمت لحظه‌ای بازار ارز</h1>\n\n"
-                message += "     <blockquote>\U0001f4b5 قیمت ارزها \U0001f4b5</blockquote>     \n"
+                message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
                 for idx in indexs:
                     item = data[idx]
-                    message += f"<table>\n<tr><th>قیمت</th><th>عنوان</th></tr>\n<tr><td>{item['sell_price']['value']}</td><td>{item['name_persian']}</td></tr>\n</table>"
+                    message += (
+                        f" - {item['name_persian']}\n"
+                        f" - قیمت: {item['sell_price']['value']} {item['currency']}\n"
+                        f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    )
 
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -199,16 +194,15 @@ class Arz:
                 await sent.delete()
 
                 index = [2, 3, 4, 5]
-                message = "<h1>قیمت لحظه‌ای بازار سکه</h1>\n\n"
-                message += "     <blockquote>🪙 قیمت سکه 🪙</blockquote>     \n"
+                message = "🪙 قیمت سکه 🪙\n\n"
                 for inx in index:
                     item = data[inx]
                     message += (
-                        "<table>"
-                        "<tr><th>حباب قیمتی</th><th>قیمت</th><th>عنوان</th></tr>"
-                        f"<tr><td>{item['bubble']['amount']}</td><td>{item['price']}</td><td>🪙 {item['name_persian']}</td></tr>"
+                        f" - 🪙 {item['name_persian']}\n"
+                        f" - قیمت: {item['price']} {item['currency']}\n"
+                        f" - حباب قیمتی: {item['bubble']['amount']}\n"
+                        f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
-                message += "</table>"
 
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -219,13 +213,12 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                message = "<h1>قیمت لحظه‌ای بازار طلا</h1>\n\n"
-                message = "     <blockquote>💰 قیمت طلا 💰</blockquote>     \n"
+                message = "💰 قیمت طلا 💰\n\n"
                 message += (
-                    "<table>"
-                    "<tr><th>حباب قیمتی</th><th>قیمت</th><th>عنوان</th></tr>"
-                    f"<tr><td>{item['bubble']['amount']}</td><td>{item['price']}</td><td>💰 طلای 18 عیار</td></tr>"
-                    "</table>"
+                    f" - 💰 طلای 18 عیار\n"
+                    f" - قیمت: {tala_18['price']} {tala_18['currency']}\n"
+                    f" - حباب قیمتی: {tala_18['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
 
             elif text in '💱 خلاصه قیمت ها 🪙':
@@ -358,18 +351,12 @@ class Arz:
                 await self.send_long_message(update, message)
                 return
             
-            await update.message.reply_text(message, parse_mode="HTML")
+            await update.message.reply_text(message)
             return
 
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-
-async def post_init(application):
-    await application.bot.set_my_commands([
-        BotCommand('start', 'شروع و نمایش منو'),
-        BotCommand('help', 'راهنمای دستورات')
-    ])
         
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -382,13 +369,10 @@ if __name__ == '__main__':
 
     application = ApplicationBuilder().token(token).build()
 
-    application.post_init = post_init
-
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
