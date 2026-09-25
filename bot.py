@@ -82,7 +82,7 @@ class Arz:
             "users": data
             }, 
             ensure_ascii=False).encode('utf-8')
-        encoded = base64.b64encode(payload.encode("utf-8")).decode("utf-8")
+        encoded = base64.b64encode(payload).decode("utf-8")
 
         resp = requests.get(url, headers=headers, timeout=20)
         print("GET status:", resp.status_code)
