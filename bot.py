@@ -184,16 +184,11 @@ class Arz:
                 await sent.delete()
 
                 indexs = [0, 6, 1, 2, 3, 4, 9, 15, 19]
-                message = "<b>قیمت لحظه‌ای بازار ارز</b>\n\n"
+                message = "<h1>قیمت لحظه‌ای بازار ارز</h1>\n\n"
                 message += "     <blockquote>\U0001f4b5 قیمت ارزها \U0001f4b5</blockquote>     \n"
                 for idx in indexs:
                     item = data[idx]
-                    message += (
-                        "<table>"
-                        "<tr><th>قیمت</th><th>عنوان</th></tr>"
-                        f"<tr><td>{item['sell_price']['value']}</td><td>{item['name_persian']}</td></tr>"
-                    )
-                message += "</table>"
+                    message += f"<table>\n<tr><th>قیمت</th><th>عنوان</th></tr>\n<tr><td>{item['sell_price']['value']}</td><td>{item['name_persian']}</td></tr>\n</table>"
 
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
