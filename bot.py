@@ -139,7 +139,7 @@ class Arz:
 
         await update.message.reply_text(f'نسخه: {VERSION}\n\n'
                 'تغییرات:\n'
-                ' - اکنون پس از به روزرسانی ربات برای کاربر پیغام داده می‌شود'
+                ' - اکنون پس از به روزرسانی ربات برای کاربر پیغام داده می‌شود\n'
                 ' - آپدیت هر لحظه لیست با هر درخواست\n'
             )
         return
@@ -378,7 +378,6 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
