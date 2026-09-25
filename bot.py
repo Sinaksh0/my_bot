@@ -15,7 +15,7 @@ VERSION = '0.6.1'
 class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
-        self.users = self.load_state()
+        self.users = []
         self.url = MAIN_API
 
         self.keyboard = [
@@ -121,10 +121,8 @@ class Arz:
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
-
-        if chat_id not in self.users:
-            self.users.append(chat_id)
-            self.upload_github(self.users)
+        self.users.append(chat_id)
+        self.upload_github(self.users)
             
         user = update.effective_user
         name = user.full_name
