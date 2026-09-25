@@ -53,14 +53,22 @@ class Arz:
             if not body:
                 return []
 
-            data = json.loads(body)
+            try:
+                data = json.loads(body)
+            except ValueError:
+                try:
+                    decoded = base64.b64decode(body)
+                    data = json.loads(decoded.decode('utf-8'))
+                except Exception:
+                    return []
+
             if isinstance(data, list):
                 return data
             return []
-        except (requests.RequestException, ValueError):
+        except requests.RequestException:
             return []
     
-    def upload_github(self, encode):
+    def upload_github(self, data):
         if not GIT:
             return {'error': 'GITHUB_TOKEN is not set'}
 
@@ -73,20 +81,20 @@ class Arz:
 
         try:
             get_file = requests.get(url, headers=headers, timeout=15)
-            if get_file.status_code == 200:
-                sha = get_file.json().get("sha")
-            else:
-                sha = None
+            sha = get_file.json().get("sha") if get_file.status_code == 200 else None
 
-            data = {
+            payload = json.dumps(data, ensure_ascii=False)
+            encoded = base64.b64encode(payload.encode('utf-8')).decode('utf-8')
+
+            request_data = {
                 "message": "Auto updating",
-                "content": encode,
+                "content": encoded,
             }
 
             if sha is not None:
-                data["sha"] = sha
+                request_data["sha"] = sha
 
-            response = requests.put(url, json=data, headers=headers, timeout=15)
+            response = requests.put(url, json=request_data, headers=headers, timeout=15)
             return response.json()
         except requests.RequestException as exc:
             return {'error': str(exc)}
@@ -113,12 +121,12 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id not in self.users:
-            self.users.append(update.effective_chat.id)
-            payload = json.dumps(self.users, ensure_ascii=False).encode("utf-8")
-            encoded = base64.b64encode(payload).decode("utf-8")
-            self.upload_github(encoded)
-            
+        chat_id = update.effective_chat.id
+
+        if chat_id not in self.users:
+            self.users.append(chat_id)
+            self.upload_github(self.users)
+
         user = update.effective_user
         name = user.full_name
 
