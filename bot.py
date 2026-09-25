@@ -15,7 +15,8 @@ VERSION = '0.6.1'
 class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
-        self.users = []
+        self.users = self.load_state()
+        print(self.users)
         self.url = MAIN_API
 
         self.keyboard = [
@@ -76,7 +77,11 @@ class Arz:
             "Accept": "application/vnd.github+json"
         }
 
-        payload = json.dumps({"users": data}, ensure_ascii=False)
+        payload = json.dumps({
+            "count": len(data),
+            "users": data
+            }, 
+            ensure_ascii=False).encode('utf-8')
         encoded = base64.b64encode(payload.encode("utf-8")).decode("utf-8")
 
         resp = requests.get(url, headers=headers, timeout=20)
@@ -96,7 +101,6 @@ class Arz:
         print("PUT status:", put_resp.status_code)
         print(put_resp.text[:500])
         print(put_resp.json())
-        return put_resp.json()
 
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
@@ -121,8 +125,10 @@ class Arz:
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id
-        self.users.append(chat_id)
-        self.upload_github(self.users)
+
+        if chat_id not in self.users:
+            self.users.append(chat_id)
+            self.upload_github(self.users)
             
         user = update.effective_user
         name = user.full_name
