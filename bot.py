@@ -68,42 +68,35 @@ class Arz:
     
     def upload_github(self, data):
         if not GIT:
-            return {'error': 'GITHUB_TOKEN is not set'}
+            raise RuntimeError("GITHUB_TOKEN is not set")
 
         url = 'https://api.github.com/repos/Sinaksh0/my_bot/contents/users.json'
-
         headers = {
             "Authorization": f"Bearer {GIT}",
             "Accept": "application/vnd.github+json"
         }
 
-        try:
-            get_file = requests.get(url, headers=headers, timeout=15)
-            sha = get_file.json().get("sha") if get_file.status_code == 200 else None
+        payload = json.dumps({"users": data}, ensure_ascii=False)
+        encoded = base64.b64encode(payload.encode("utf-8")).decode("utf-8")
 
-            payload = json.dumps({
-                "count": len(data),
-                "users": data
-                }, 
-                ensure_ascii=False).encode('utf-8')
-            encoded = base64.b64encode(payload).decode('utf-8')
+        resp = requests.get(url, headers=headers, timeout=20)
+        print("GET status:", resp.status_code)
+        print(resp.text[:300])
 
-            request_data = {
-                "message": "Auto updating",
-                "content": encoded,
-                "branch": "main",
-                "committer": {
-                    'name': 'Sinaksh0'
-                }
-            }
+        body = {
+            "message": "Auto updating users",
+            "content": encoded,
+            "branch": "main"
+        }
 
-            if sha is not None:
-                request_data["sha"] = sha
+        if resp.status_code == 200:
+            body["sha"] = resp.json().get("sha")
 
-            response = requests.put(url, json=request_data, headers=headers, timeout=15)
-            return response.json()
-        except requests.RequestException as exc:
-            return {'error': str(exc)}
+        put_resp = requests.put(url, headers=headers, json=body, timeout=20)
+        print("PUT status:", put_resp.status_code)
+        print(put_resp.text[:500])
+        print(put_resp.json())
+        return put_resp.json()
 
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
