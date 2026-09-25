@@ -10,13 +10,12 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
-VERSION = '0.6.1'
+VERSION = '0.8.0'
 
 class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.users = self.load_state()
-        print(self.users)
         self.url = MAIN_API
 
         self.keyboard = [
@@ -85,8 +84,6 @@ class Arz:
         encoded = base64.b64encode(payload).decode("utf-8")
 
         resp = requests.get(url, headers=headers, timeout=20)
-        print("GET status:", resp.status_code)
-        print(resp.text[:300])
 
         body = {
             "message": "Auto updating users",
@@ -98,9 +95,6 @@ class Arz:
             body["sha"] = resp.json().get("sha")
 
         put_resp = requests.put(url, headers=headers, json=body, timeout=20)
-        print("PUT status:", put_resp.status_code)
-        print(put_resp.text[:500])
-        print(put_resp.json())
 
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
@@ -145,8 +139,8 @@ class Arz:
 
         await update.message.reply_text(f'نسخه: {VERSION}\n\n'
                 'تغییرات:\n'
-                ' - بهبود در ارسال قیمت ها\n'
-                ' - آپدیت هر دقیقه لیست با هر درخواست\n'
+                ' - اکنون پس از به روزرسانی ربات برای کاربر پیغام داده می‌شود'
+                ' - آپدیت هر لحظه لیست با هر درخواست\n'
             )
         return
     
@@ -384,6 +378,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.job_queue.run_once(arz.check_update)
 
     application.run_webhook(
         listen='0.0.0.0',
