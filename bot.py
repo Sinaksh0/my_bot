@@ -184,14 +184,16 @@ class Arz:
                 await sent.delete()
 
                 indexs = [0, 6, 1, 2, 3, 4, 9, 15, 19]
-                message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
+                message = "<h1>قیمت لحظه‌ای بازار ارز</h1>\n\n"
+                message += "     <blockquote>\U0001f4b5 قیمت ارزها \U0001f4b5</blockquote>     \n"
                 for idx in indexs:
                     item = data[idx]
                     message += (
-                        f" - {item['name_persian']}\n"
-                        f" - قیمت: {item['sell_price']['value']} {item['currency']}\n"
-                        f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                        "<table>"
+                        "<tr><th>قیمت</th><th>عنوان</th></tr>"
+                        f"<tr><td>{item['sell_price']['value']}</td><td>{item['name_persian']}</td></tr>"
                     )
+                message += "</table>"
 
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -202,15 +204,16 @@ class Arz:
                 await sent.delete()
 
                 index = [2, 3, 4, 5]
-                message = "🪙 قیمت سکه 🪙\n\n"
+                message = "<h1>قیمت لحظه‌ای بازار سکه</h1>\n\n"
+                message += "     <blockquote>🪙 قیمت سکه 🪙</blockquote>     \n"
                 for inx in index:
                     item = data[inx]
                     message += (
-                        f" - 🪙 {item['name_persian']}\n"
-                        f" - قیمت: {item['price']} {item['currency']}\n"
-                        f" - حباب قیمتی: {item['bubble']['amount']}\n"
-                        f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                        "<table>"
+                        "<tr><th>حباب قیمتی</th><th>قیمت</th><th>عنوان</th></tr>"
+                        f"<tr><td>{item['bubble']['amount']}</td><td>{item['price']}</td><td>🪙 {item['name_persian']}</td></tr>"
                     )
+                message += "</table>"
 
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -221,12 +224,13 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                message = "💰 قیمت طلا 💰\n\n"
+                message = "<h1>قیمت لحظه‌ای بازار طلا</h1>\n\n"
+                message = "     <blockquote>💰 قیمت طلا 💰</blockquote>     \n"
                 message += (
-                    f" - 💰 طلای 18 عیار\n"
-                    f" - قیمت: {tala_18['price']} {tala_18['currency']}\n"
-                    f" - حباب قیمتی: {tala_18['bubble']['amount']}\n"
-                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    "<table>"
+                    "<tr><th>حباب قیمتی</th><th>قیمت</th><th>عنوان</th></tr>"
+                    f"<tr><td>{item['bubble']['amount']}</td><td>{item['price']}</td><td>💰 طلای 18 عیار</td></tr>"
+                    "</table>"
                 )
 
             elif text in '💱 خلاصه قیمت ها 🪙':
@@ -359,7 +363,7 @@ class Arz:
                 await self.send_long_message(update, message)
                 return
             
-            await update.message.reply_text(message)
+            await update.message.reply_text(message, parse_mode="HTML")
             return
 
         except requests.exceptions.RequestException:
