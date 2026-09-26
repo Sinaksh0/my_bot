@@ -104,6 +104,7 @@ class Arz:
         return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
+        self.users = self.load_state()
         if not self.users:
             return
 
@@ -190,24 +191,29 @@ class Arz:
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
 
-            elif text in '🪙 قیمت سکه 🪙':
-                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
-                data = await self.get_arz()
-                data = data['gold_prices']['items']
-
-                await sent.edit_text('در حال ارسال...')
-                await sent.delete()
-
-                index = [2, 3, 4, 5]
                 message = "🪙 قیمت سکه 🪙\n\n"
-                for inx in index:
-                    item = data[inx]
-                    message += (
-                        f" - 🪙 {item['name_persian']}\n"
-                        f" - قیمت: {item['price']} {item['currency']}\n"
-                        f" - حباب قیمتی: {item['bubble']['amount']}\n"
-                        f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
-                    )
+                emami = data[2]
+                azadi = data[3]
+                nim = data[4]
+                rob = data[5]
+                message += (
+                    f" - 🪙 سکه امامی\n"
+                    f" - قیمت: {emami['price']} {emami['currency']}\n"
+                    f" - حباب قیمتی: {emami['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    f" - 🪙 سکه بهار آزادی\n"
+                    f" - قیمت: {azadi['price']} {azadi['currency']}\n"
+                    f" - حباب قیمتی: {azadi['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    f" - 🪙 نیم سکه\n"
+                    f" - قیمت: {nim['price']} {nim['currency']}\n"
+                    f" - حباب قیمتی: {nim['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    f" - 🪙 ربع سکه\n"
+                    f" - قیمت: {rob['price']} {rob['currency']}\n"
+                    f" - حباب قیمتی: {rob['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                )
 
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
@@ -233,6 +239,7 @@ class Arz:
                 tether = data['crypto_prices']['items'][0]
                 dollar = data['currency_prices']['items'][0]
                 eurro = data['currency_prices']['items'][1]
+                seke_emami = data['gold_prices']['items'][2]
                 seke = data['gold_prices']['items'][3]
                 tala_18 = data['gold_prices']['items'][1]
 
@@ -247,7 +254,11 @@ class Arz:
                     f" - 💷 {eurro['name_persian']}\n"
                     f" - قیمت: {eurro['sell_price']['value']} {dollar['currency']}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
-                    f" - 🪙 قیمت سکه بهار آزادی\n"
+                    f" - 🪙 سکه امامی\n"
+                    f" - قیمت: {seke_emami['price']} {seke_emami['currency']}\n"
+                    f" - حباب قیمتی: {seke_emami['bubble']['amount']}\n"
+                    f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
+                    f" - 🪙 سکه بهار آزادی\n"
                     f" - قیمت: {seke['price']} {seke['currency']}\n"
                     f" - حباب قیمتی: {seke['bubble']['amount']}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
