@@ -191,6 +191,14 @@ class Arz:
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
 
+            elif text in '🪙 قیمت سکه 🪙':
+                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
+                data = await self.get_arz()
+                data = data['gold_prices']['items']
+
+                await sent.edit_text('در حال ارسال...')
+                await sent.delete()
+
                 message = "🪙 قیمت سکه 🪙\n\n"
                 emami = data[2]
                 azadi = data[3]
