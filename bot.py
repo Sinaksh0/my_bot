@@ -381,18 +381,6 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-
-async def birthday(context: ContextTypes.DEFAULT_TYPE):
-    text = "سلام نیما جوون❤️\nتولدت خیلی خیلی مبارک باشه🎂🎂\n همیشه توی اوج ببینمت😘😘❤️❤️"
-    await context.bot.send_message(
-        chat_id=941358417,
-        text=text
-        )
-    
-    await context.bot.send_message(
-        chat_id=1823652124,
-        text=text
-    )
     
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -409,7 +397,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.job_queue.run_once(birthday, when=5)
+
     application.run_webhook(
         listen='0.0.0.0',
         port=port,
