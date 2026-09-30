@@ -119,7 +119,7 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        #self.users = self.load_state()
+        self.users = self.load_state()
         chat = update.effective_chat
         user = update.effective_user
         chat_id = chat.id
@@ -129,12 +129,13 @@ class Arz:
         else:
             name = user.full_name
 
-        self.users.append({
-            "Name": name,
-            "ID": chat_id
-        })
-        self.upload_github(self.users)
-            
+        for id in self.users:
+            if chat_id != id['ID']:
+                self.users.append({
+                    "Name": name,
+                    "ID": chat_id
+                })
+                self.upload_github(self.users)
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
