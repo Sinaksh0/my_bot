@@ -129,10 +129,11 @@ class Arz:
         else:
             name = user.full_name
 
-        flag = False
+        flag = True
         for id in self.users:
-            if chat_id != id['ID']:
-                flag = True
+            if chat_id == id['ID']:
+                flag = False
+                break
 
         if flag:
             self.users.append({
