@@ -29,6 +29,7 @@ class Arz:
             ['هیوندای', 'کیا', 'تویوتا'],
             ['بنز', 'بی ام و', 'فولکس واگن'],
             ['مزدا', 'ولوو', 'آئودی'],
+            ['نیسان', 'هوندا', 'میتسوبیشی'],
             ['MG', 'BYD', 'GAC'],
             ['چانگان', 'ونوسیا', 'اشکودا'],
             ['🔙 بازگشت']
@@ -93,7 +94,7 @@ class Arz:
         if resp.status_code == 200:
             body["sha"] = resp.json().get("sha")
 
-        put_resp = requests.put(url, headers=headers, json=body, timeout=20)
+        requests.put(url, headers=headers, json=body, timeout=20)
 
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
@@ -118,15 +119,22 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.users = self.load_state()
-        chat_id = update.effective_chat.id
-
-        if chat_id not in self.users:
-            self.users.append(chat_id)
-            self.upload_github(self.users)
-            
+        #self.users = self.load_state()
+        chat = update.effective_chat
         user = update.effective_user
-        name = user.full_name
+        chat_id = chat.id
+        
+        if chat.type in ['group', 'supergroup']:
+            name = chat.title
+        else:
+            name = user.full_name
+
+        self.users.append({
+            "Name": name,
+            "ID": chat_id
+        })
+        self.upload_github(self.users)
+            
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
@@ -139,9 +147,10 @@ class Arz:
             )
 
         await update.message.reply_text(f'نسخه: {VERSION}\n\n'
-                'تغییرات:\n'
-                ' - اکنون پس از به روزرسانی ربات برای کاربر پیغام داده می‌شود\n'
-                ' - آپدیت هر لحظه لیست با هر درخواست\n'
+                '<b> تغییرات:</b>\n'
+                ' - اضافه شدن خودرو های (نیسان، هوندا، میتسوبیشی) به لیست خودرو های وارداتی\n'
+                ' - بهبود در مدیریت کاربران',
+                parse_mode="HTML"
             )
         return
     
@@ -333,7 +342,7 @@ class Arz:
                 await self.send_long_message(update, message)
                 return
 
-            elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
+            elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
 
                 cars = {
@@ -346,6 +355,9 @@ class Arz:
                     'مزدا': 'mazda',
                     'ولوو': 'volvo',
                     'آئودی': 'audi',
+                    'نیسان': 'nissan',
+                    'هوندا': 'honda',
+                    'میتسوبیشی': 'mitsubishi',
                     'MG': 'mg',
                     'BYD': 'byd',
                     'GAC': 'gac',
@@ -397,6 +409,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
