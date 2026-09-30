@@ -111,7 +111,7 @@ class Arz:
 
         for chat_id in self.users:
             await context.bot.send_message(
-                chat_id=chat_id,
+                chat_id=chat_id['ID'],
                 text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
                      '- برای اعمال آپدیت مجدد /start کنید.'
             )
@@ -129,13 +129,17 @@ class Arz:
         else:
             name = user.full_name
 
+        flag = False
         for id in self.users:
             if chat_id != id['ID']:
-                self.users.append({
-                    "Name": name,
-                    "ID": chat_id
-                })
-                self.upload_github(self.users)
+                flag = True
+
+        if flag:
+            self.users.append({
+                "Name": name,
+                "ID": chat_id
+            })
+            self.upload_github(self.users)
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
