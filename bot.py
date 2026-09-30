@@ -10,7 +10,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
-VERSION = '0.9.0'
+VERSION = '0.9.1'
 
 class Arz:
     def __init__(self):
@@ -105,15 +105,16 @@ class Arz:
         return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
-        self.users = self.load_state()
-        if not self.users:
-            return
+        #self.users = self.load_state()
+        #if not self.users:
+            #return
 
-        for chat_id in self.users:
+        data = [1823652124, 8105045808, 500459873, 5639347150, 1044721884, 6467497901, 941358417, 6809829494, 596327288, 1177968554, 1193688862]
+        for chat_id in data:
             await context.bot.send_message(
-                chat_id=chat_id['ID'],
-                text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
-                     '- برای اعمال آپدیت مجدد /start کنید.'
+                chat_id=chat_id,
+                text=f'آپدیت فوری نسخه {VERSION} منتشر شد.\n\n'
+                     '- برای اعمال آپدیت، مجدد /start کنید.'
             )
 
         return
@@ -415,6 +416,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_webhook(
         listen='0.0.0.0',
@@ -422,3 +424,4 @@ if __name__ == '__main__':
         url_path='webhook',
         webhook_url=f"{webhook_url.rstrip('/')}/webhook"
     )
+    
