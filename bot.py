@@ -10,7 +10,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
-VERSION = '0.9.1'
+ADMIN_ID = os.getenv('Admin_ID')
+VERSION = '0.9.5'
 
 class Arz:
     def __init__(self):
@@ -23,6 +24,15 @@ class Arz:
             ['💱 قیمت ارز ها 💱'],
             ['🚗 خودرو های داخلی 🚗'],
             ['🚗 خودرو های وارداتی 🚗']
+        ]
+
+        self.admin_keyborad = [
+            ['💱 خلاصه قیمت ها 🪙'],
+            ['🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰'],
+            ['💱 قیمت ارز ها 💱'],
+            ['🚗 خودرو های داخلی 🚗'],
+            ['🚗 خودرو های وارداتی 🚗'],
+            ['⚙️ پنل مدیریت ⚙️']
         ]
 
         self.carkeyboard = [
@@ -96,6 +106,22 @@ class Arz:
 
         requests.put(url, headers=headers, json=body, timeout=20)
 
+    def check_user(self, name: str, chat_id: int):
+        flag = True
+        for id in self.users:
+            if chat_id == id['ID']:
+                flag = False
+                break
+        
+        if flag:
+            self.users.append({
+                "Name": name,
+                "ID": chat_id
+            })
+            self.upload_github(self.users)
+
+        return
+    
     async def get_arz(self):
         response = requests.get(self.url, timeout=10).json()
         return response
@@ -108,12 +134,12 @@ class Arz:
         self.users = self.load_state()
         if not self.users:
             return
-
+        
         for chat_id in self.users:
             await context.bot.send_message(
                 chat_id=chat_id['ID'],
-                text=f'آپدیت نسخه {VERSION} منتشر شد.\n\n'
-                     '- برای اعمال آپدیت مجدد /start کنید.'
+                text=f'آپدیت فوری نسخه v{VERSION} منتشر شد.\n\n'
+                     '- برای اعمال آپدیت، مجدد /update کنید.'
             )
 
         return
@@ -123,24 +149,18 @@ class Arz:
         chat = update.effective_chat
         user = update.effective_user
         chat_id = chat.id
-        
+
+        if chat_id == ADMIN_ID:
+            keyboard = self.admin_keyborad
+        else:
+            keyboard = self.keyboard
+
         if chat.type in ['group', 'supergroup']:
             name = chat.title
         else:
             name = user.full_name
 
-        flag = True
-        for id in self.users:
-            if chat_id == id['ID']:
-                flag = False
-                break
-
-        if flag:
-            self.users.append({
-                "Name": name,
-                "ID": chat_id
-            })
-            self.upload_github(self.users)
+        self.check_user(name, chat_id)
 
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
@@ -149,17 +169,41 @@ class Arz:
         
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
-            reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
-            )
-
-        await update.message.reply_text(f'نسخه: {VERSION}\n\n'
-                '<b> تغییرات:</b>\n'
-                ' - اضافه شدن خودرو های (نیسان، هوندا، میتسوبیشی) به لیست خودرو های وارداتی\n'
-                ' - بهبود در مدیریت کاربران',
-                parse_mode="HTML"
+            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
         return
-    
+
+    async def update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        self.users = self.load_state()
+        chat = update.effective_chat
+        user = update.effective_user
+        chat_id = chat.id
+
+        if chat_id == ADMIN_ID:
+            keyboard = self.admin_keyborad
+        else:
+            keyboard = self.keyboard
+
+        if chat.type in ['group', 'supergroup']:
+            name = chat.title
+        else:
+            name = user.full_name
+
+        self.check_user(name, chat_id)
+
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
+        text = (f'نسخه: v{VERSION}\n\n'
+                '<b> تغییرات:</b>\n'
+                ' - اضافه شدن خودرو های (نیسان، هوندا، میتسوبیشی) به لیست خودرو های وارداتی\n'
+                ' - بهبود در مدیریت کاربران')
+        
+        await update.message.reply_text(text=text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        return
+
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
@@ -173,6 +217,80 @@ class Arz:
         )
         await update.message.reply_text(text)
 
+    async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.id != ADMIN_ID:
+            return
+
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        keyboard = [
+            ['📊 تعداد کاربران', '📨 پیام همگانی'],
+            ['🔙 بازگشت']
+        ]
+
+        await update.message.reply_text('پنل مدیریت فعال شد.⚙️',
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+
+    async def admin_count_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.id != ADMIN_ID:
+            return
+        if update.message.text != '📊 تعداد کاربران':
+            return
+
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
+        data = self.load_state()
+        count = len(data)
+        message = 'لیست کاربران📋\n\n'
+        for user in data:
+            message += (
+                f'نام: {user['Name']}\n'
+                f'آیدی: {user['ID']}\n\n'
+            )
+
+        await update.message.reply_text(f'تعداد کل کاربران: {count} 📊')
+        await update.message.reply_text(message)
+
+    async def public_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if update.effective_chat.id != ADMIN_ID:
+            return
+
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
+        if update.message.text == '📨 پیام همگانی':
+            await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
+        else:
+            return
+
+    async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
+        text = update.message.text
+        if '/send' not in text:
+            await update.message.reply_text('در پیام باید /send وجود داشته باشد.')
+            return 
+        
+        msg = text.replace('/send', '')
+
+        users = self.load_state()
+        for user in users:
+            try:
+                await context.bot.send_message(chat_id=user['ID'], text=msg)
+            except:
+                pass
+        await update.message.reply_text('پیام همگانی ارسال شد.')
+        
     async def send_long_message(self, update: Update, message: str, chunk_size: int = 3000):
         for i in range(0, len(message), chunk_size):
             await update.message.reply_text(message[i:i + chunk_size])
@@ -399,7 +517,14 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-    
+        
+async def post_init(application):
+    await application.bot.set_my_commands([
+        BotCommand('start', 'شروع و نمایش منو'),
+        BotCommand('update', 'آپدیت ربات'),
+        BotCommand('help', 'راهنمای دستورات')
+    ])
+
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
@@ -411,10 +536,16 @@ if __name__ == '__main__':
 
     application = ApplicationBuilder().token(token).build()
 
+    application.post_init = post_init
+
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
+    application.add_handler(CommandHandler("update", arz.update))
+    application.add_handler(CommandHandler("send", arz.send_to_user))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.admin_count_user))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.public_message))
 
     application.run_webhook(
         listen='0.0.0.0',
@@ -422,4 +553,3 @@ if __name__ == '__main__':
         url_path='webhook',
         webhook_url=f"{webhook_url.rstrip('/')}/webhook"
     )
-    
