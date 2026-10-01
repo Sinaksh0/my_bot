@@ -220,11 +220,7 @@ class Arz:
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.id != ADMIN_ID:
             return
-
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+            
         keyboard = [
             ['📊 تعداد کاربران', '📨 پیام همگانی'],
             ['🔙 بازگشت']
@@ -238,11 +234,6 @@ class Arz:
             return
         if update.message.text != '📊 تعداد کاربران':
             return
-
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
         
         data = self.load_state()
         count = len(data)
@@ -259,11 +250,6 @@ class Arz:
     async def public_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.id != ADMIN_ID:
             return
-
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
         
         if update.message.text == '📨 پیام همگانی':
             await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
@@ -271,11 +257,6 @@ class Arz:
             return
 
     async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
-        
         text = update.message.text
         if '/send' not in text:
             await update.message.reply_text('در پیام باید /send وجود داشته باشد.')
@@ -540,6 +521,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("send", arz.send_to_user))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.admin_count_user))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.public_message))
 
