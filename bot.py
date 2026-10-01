@@ -10,7 +10,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
-ADMIN_ID = os.getenv('Admin_ID')
+ADMIN_ID = int(os.getenv('Admin_ID'))
 VERSION = '0.9.5'
 
 class Arz:
@@ -201,7 +201,7 @@ class Arz:
                 ' - اضافه شدن خودرو های (نیسان، هوندا، میتسوبیشی) به لیست خودرو های وارداتی\n'
                 ' - بهبود در مدیریت کاربران')
         
-        await update.message.reply_text(text=text, reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        await update.message.reply_text(text=text, parse_mode='HTML', reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
         return
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -517,13 +517,6 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-        
-async def post_init(application):
-    await application.bot.set_my_commands([
-        BotCommand('start', 'شروع و نمایش منو'),
-        BotCommand('update', 'آپدیت ربات'),
-        BotCommand('help', 'راهنمای دستورات')
-    ])
 
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -535,8 +528,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     application = ApplicationBuilder().token(token).build()
-
-    application.post_init = post_init
 
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
