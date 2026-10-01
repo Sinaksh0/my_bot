@@ -323,7 +323,9 @@ class Arz:
                         f" - قیمت: {item['sell_price']['value']} {item['currency']}\n"
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
-
+                await update.message.reply_text(message)
+                return
+            
             elif text in '🪙 قیمت سکه 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz()
@@ -355,7 +357,9 @@ class Arz:
                     f" - حباب قیمتی: {rob['bubble']['amount']}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
-
+                await update.message.reply_text(message)
+                return
+            
             elif text in '💰 قیمت طلا 💰':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz()
@@ -372,7 +376,9 @@ class Arz:
                     f" - حباب قیمتی: {tala_18['bubble']['amount']}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
-
+                await update.message.reply_text(message)
+                return
+            
             elif text in '💱 خلاصه قیمت ها 🪙':
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz()
@@ -411,7 +417,9 @@ class Arz:
 
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
-
+                await update.message.reply_text(message)
+                return
+            
             elif text in '🚗 خودرو های داخلی 🚗':
                 await update.message.reply_text(
                     "🚗 لیست خودرو های داخلی 🚗\nیکی از آنها را انتخاب کنید",
@@ -510,9 +518,6 @@ class Arz:
                     )
                 await self.send_long_message(update, message)
                 return
-            
-            await update.message.reply_text(message)
-            return
 
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
