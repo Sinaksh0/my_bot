@@ -30,8 +30,7 @@ class Arz:
             ['💱 خلاصه قیمت ها 🪙'],
             ['🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰'],
             ['💱 قیمت ارز ها 💱'],
-            ['🚗 خودرو های داخلی 🚗'],
-            ['🚗 خودرو های وارداتی 🚗'],
+            ['🚗 خودرو های داخلی 🚗', '🚗 خودرو های وارداتی 🚗'],
             ['⚙️ پنل مدیریت ⚙️']
         ]
 
@@ -222,7 +221,7 @@ class Arz:
             return
             
         keyboard = [
-            ['📊 تعداد کاربران', '📨 پیام همگانی'],
+            ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
             ['🔙 بازگشت']
         ]
 
@@ -520,10 +519,10 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("update", arz.update))
     application.add_handler(CommandHandler("send", arz.send_to_user))
     application.add_handler(CommandHandler("help", arz.help))
+    application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
+    application.add_handler(MessageHandler(filters.Regex(r'^📊 آمار کاربران 📊$'), arz.admin_count_user))
+    application.add_handler(MessageHandler(filters.Regex(r'^📨 پیام عمومی 📨$'), arz.public_message))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.admin_panel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.admin_count_user))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.public_message))
 
     application.run_webhook(
         listen='0.0.0.0',
