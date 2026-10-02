@@ -4,12 +4,14 @@ import json
 import base64
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from telegram import Update, ReplyKeyboardMarkup, BotCommand
+from cryptography.fernet import Fernet
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
+KEY = os.getenv('Key')
 ADMIN_ID = int(os.getenv('Admin_ID'))
 VERSION = '0.9.6'
 
@@ -17,6 +19,7 @@ class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.url = MAIN_API
+        self.fernet = Fernet(KEY)
 
         self.keyboard = [
             ['💱 خلاصه قیمت ها 🪙'],
@@ -63,11 +66,13 @@ class Arz:
                 return []
 
             try:
-                data = json.loads(body)
+                decrypt = self.fernet.decrypt(body).decode()
+                data = json.loads(decrypt)
             except ValueError:
                 try:
                     decoded = base64.b64decode(body)
-                    data = json.loads(decoded.decode('utf-8'))
+                    decrypt = self.fernet.decrypt(decoded.decode()).decode()
+                    data = json.loads(decrypt)
                 except Exception:
                     return []
 
@@ -90,7 +95,8 @@ class Arz:
             "users": data
             }, 
             ensure_ascii=False).encode('utf-8')
-        encoded = base64.b64encode(payload).decode("utf-8")
+        encrypt = self.fernet.encrypt(payload)
+        encoded = base64.b64encode(encrypt).decode("utf-8")
 
         resp = requests.get(url, headers=headers, timeout=20)
 
@@ -138,7 +144,8 @@ class Arz:
             await context.bot.send_message(
                 chat_id=chat_id['ID'],
                 text=f'آپدیت فوری نسخه v{VERSION} منتشر شد.\n\n'
-                     '- برای اعمال آپدیت، مجدد /update کنید.'
+                     '- برای اعمال آپدیت بر روی دستور زیر بزنید:\n'
+                     '/update'
             )
         return
 
@@ -221,7 +228,7 @@ class Arz:
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
-
+        
         keyboard = [
             ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
             ['🔙 بازگشت']
