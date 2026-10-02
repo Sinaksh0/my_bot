@@ -5,15 +5,15 @@ import base64
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, filters
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
 ADMIN_ID = int(os.getenv('Admin_ID'))
-VERSION = '0.9.6'
+VERSION = '0.9.7'
 
 class Arz:
     def __init__(self):
@@ -67,14 +67,12 @@ class Arz:
 
             try:
                 decrypt = self.fernet.decrypt(body).decode()
-                result = json.loads(decrypt)
-                data = json.loads(result)
+                data = json.loads(decrypt)
             except ValueError:
                 try:
                     decoded = base64.b64decode(body)
                     decrypt = self.fernet.decrypt(decoded).decode('utf-8')
-                    result = json.loads(decrypt)
-                    data = json.loads(result)
+                    data = json.loads(decrypt)
                 except Exception:
                     return []
 
@@ -230,37 +228,48 @@ class Arz:
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
+
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
         
-        keyboard = [
-            ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
-            ['🔙 بازگشت']
+        self.inline_keyboard = [
+            [InlineKeyboardButton('📊 تعداد کاربران 📊', callback_data='users')],
+            [InlineKeyboardButton('📨 پیام همگانی 📨', callback_data='messages')]
         ]
 
-        await update.message.reply_text('پنل مدیریت فعال شد.⚙️',
-                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        reply_markup = InlineKeyboardMarkup(self.inline_keyboard)
+        await update.message.reply_text('پنل مدیریت مدیر فعال شد.⚙️',
+                reply_markup=reply_markup)
 
-    async def admin_count_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
-            return
-        
-        data = self.load_state()
-        count = len(data)
-        message = 'لیست کاربران📋\n\n'
-        for user in data:
-            message += (
-                f'نام: {user['Name']}\n'
-                f'آیدی: {user['ID']}\n\n'
-            )
+    async def handle_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
 
-        await update.message.reply_text(f'تعداد کل کاربران: {count} 📊')
-        await update.message.reply_text(message)
+        keyboard = [
+            [InlineKeyboardButton('🔙 بازگشت', callback_data='back')]
+        ]
 
-    async def public_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
-            return
-        
-        await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
-        return
+        choose = query.data
+        if choose == 'users':
+            data = self.load_state()
+            count = len(data)
+            message = f'📊 تعداد کل کاربران: {count}\n'
+            message += '📋 لیست کاربران\n\n'
+            for user in data:
+                message += (
+                    f'نام: {user['Name']}\n'
+                    f'آیدی: {user['ID']}\n\n'
+                )
+            await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
+
+        elif choose == 'messages':
+            await query.edit_message_text('متن مورد نظر را به همراه /send ارسال کنید.', reply_markup=InlineKeyboardMarkup(keyboard))
+
+        elif choose == 'back':
+            await query.edit_message_text('پنل مدیریت فعال شد.⚙️',
+                reply_markup=InlineKeyboardMarkup(self.inline_keyboard))
 
     async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
@@ -270,8 +279,12 @@ class Arz:
         
         text = update.message.text
         if '/send' not in text:
-            await update.message.reply_text('در پیام باید /send وجود داشته باشد.')
+            await update.message.reply_text('در پیام باید /send وجود داشته باشد، مانند:\n/send سلام این یک پیام ارسالی از طرف مدیر است.')
             return 
+
+        if text == '/send':
+            await update.message.reply_text('در پیام باید /send وجود داشته باشد، مانند:\n/send سلام این یک پیام ارسالی از طرف مدیر است.')
+            return
         
         msg = text.replace('/send', '')
 
@@ -536,9 +549,8 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("send", arz.send_to_user))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.Regex(r'^📊 تعداد کاربران 📊$'), arz.admin_count_user))
-    application.add_handler(MessageHandler(filters.Regex(r'^📨 پیام همگانی 📨$'), arz.public_message))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.add_handler(CallbackQueryHandler(arz.handle_panel))
 
     application.run_webhook(
         listen='0.0.0.0',
