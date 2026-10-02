@@ -67,12 +67,14 @@ class Arz:
 
             try:
                 decrypt = self.fernet.decrypt(body).decode()
-                data = json.loads(decrypt)
+                result = json.loads(decrypt)
+                data = json.loads(result)
             except ValueError:
                 try:
                     decoded = base64.b64decode(body)
-                    decrypt = self.fernet.decrypt(decoded.decode()).decode()
-                    data = json.loads(decrypt)
+                    decrypt = self.fernet.decrypt(decoded).decode('utf-8')
+                    result = json.loads(decrypt)
+                    data = json.loads(result)
                 except Exception:
                     return []
 
