@@ -11,7 +11,7 @@ MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
 ADMIN_ID = int(os.getenv('Admin_ID'))
-VERSION = '0.9.5'
+VERSION = '0.9.6'
 
 class Arz:
     def __init__(self):
@@ -140,7 +140,6 @@ class Arz:
                 text=f'آپدیت فوری نسخه v{VERSION} منتشر شد.\n\n'
                      '- برای اعمال آپدیت، مجدد /update کنید.'
             )
-
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -149,7 +148,7 @@ class Arz:
         user = update.effective_user
         chat_id = chat.id
 
-        if chat_id == ADMIN_ID:
+        if chat.type == 'private' and user.id == ADMIN_ID:
             keyboard = self.admin_keyborad
         else:
             keyboard = self.keyboard
@@ -170,6 +169,7 @@ class Arz:
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
             reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
             )
+        
         return
 
     async def update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -178,7 +178,7 @@ class Arz:
         user = update.effective_user
         chat_id = chat.id
 
-        if chat_id == ADMIN_ID:
+        if chat.type == 'private' and user.id == ADMIN_ID:
             keyboard = self.admin_keyborad
         else:
             keyboard = self.keyboard
@@ -217,9 +217,9 @@ class Arz:
         await update.message.reply_text(text)
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
             return
-            
+        
         keyboard = [
             ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
             ['🔙 بازگشت']
@@ -231,7 +231,7 @@ class Arz:
     async def admin_count_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.id != ADMIN_ID:
             return
-        if update.message.text != '📊 تعداد کاربران':
+        if update.message.text != '📊 تعداد کاربران 📊':
             return
         
         data = self.load_state()
@@ -250,12 +250,17 @@ class Arz:
         if update.effective_chat.id != ADMIN_ID:
             return
         
-        if update.message.text == '📨 پیام همگانی':
+        if update.message.text == '📨 پیام همگانی 📨':
             await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
         else:
             return
 
     async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f44d']
+            )
+        
         text = update.message.text
         if '/send' not in text:
             await update.message.reply_text('در پیام باید /send وجود داشته باشد.')
