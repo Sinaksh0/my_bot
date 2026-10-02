@@ -219,10 +219,9 @@ class Arz:
         await update.message.reply_text(text)
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
 
-        await update.message.reply_text(f'چت آیدی: {update.effective_chat.id}\nیوزرآیدی: {update.effective_user.id}\n\n')
         keyboard = [
             ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
             ['🔙 بازگشت']
@@ -232,7 +231,7 @@ class Arz:
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
 
     async def admin_count_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
         
         data = self.load_state()
@@ -248,7 +247,7 @@ class Arz:
         await update.message.reply_text(message)
 
     async def public_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
         
         await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
@@ -419,9 +418,13 @@ class Arz:
                 return
 
             elif text in '🔙 بازگشت':
+                if update.effective_chat.type == 'private' and update.effective_user.id == ADMIN_ID:
+                    keyboard = self.admin_keyborad
+                else:
+                    keyboard = self.keyboard
                 await update.message.reply_text(
                     "بازگشت به منوی اصلی",
-                    reply_markup=ReplyKeyboardMarkup(self.keyboard, resize_keyboard=True)
+                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
                 )
                 return
 
@@ -524,8 +527,8 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("send", arz.send_to_user))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.Regex(r'^📊 آمار کاربران 📊$'), arz.admin_count_user))
-    application.add_handler(MessageHandler(filters.Regex(r'^📨 پیام عمومی 📨$'), arz.public_message))
+    application.add_handler(MessageHandler(filters.Regex(r'^📊 تعداد کاربران 📊$'), arz.admin_count_user))
+    application.add_handler(MessageHandler(filters.Regex(r'^📨 پیام همگانی 📨$'), arz.public_message))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
 
     application.run_webhook(
