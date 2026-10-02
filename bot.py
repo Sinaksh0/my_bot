@@ -212,6 +212,8 @@ class Arz:
         text = (
             '📋 دستورات ربات:\n\n'
             '/start - شروع و نمایش منو\n'
+            '/update - آپدیت ربات\n'
+            '/help - نمایش دستورات\n'
             'یا از دکمه‌های زیر صفحه برای دریافت قیمت‌ها استفاده کنید.'
         )
         await update.message.reply_text(text)
@@ -219,7 +221,8 @@ class Arz:
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
             return
-        
+
+        await update.message.reply_text(f'چت آیدی: {update.effective_chat.id}\nیوزرآیدی: {update.effective_user.id}\n\n')
         keyboard = [
             ['📊 تعداد کاربران 📊', '📨 پیام همگانی 📨'],
             ['🔙 بازگشت']
@@ -229,9 +232,7 @@ class Arz:
                 reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
 
     async def admin_count_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id != ADMIN_ID:
-            return
-        if update.message.text != '📊 تعداد کاربران 📊':
+        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
             return
         
         data = self.load_state()
@@ -247,13 +248,11 @@ class Arz:
         await update.message.reply_text(message)
 
     async def public_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
             return
         
-        if update.message.text == '📨 پیام همگانی 📨':
-            await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
-        else:
-            return
+        await update.message.reply_text('متن مورد نظر را به همراه /send ارسال کنید.')
+        return
 
     async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
