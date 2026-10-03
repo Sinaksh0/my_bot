@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, filters
 
 MAIN_API = os.getenv('Main_API')
@@ -114,8 +114,9 @@ class Arz:
         requests.put(url, headers=headers, json=body, timeout=20)
 
     def check_user(self, name: str, chat_id: int):
+        users = self.load_state()
         flag = True
-        for id in self.users:
+        for id in users:
             if chat_id == id['ID']:
                 flag = False
                 break
@@ -126,7 +127,6 @@ class Arz:
                 "ID": chat_id
             })
             self.upload_github(self.users)
-
         return
     
     async def get_arz(self):
@@ -138,11 +138,11 @@ class Arz:
         return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
-        self.users = self.load_state()
+        users = self.load_state()
         if not self.users:
             return
         
-        for chat_id in self.users:
+        for chat_id in users:
             await context.bot.send_message(
                 chat_id=chat_id['ID'],
                 text=f'آپدیت نسخه v{VERSION} منتشر شد.\n\n'
@@ -152,7 +152,6 @@ class Arz:
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.users = self.load_state()
         chat = update.effective_chat
         user = update.effective_user
         chat_id = chat.id
@@ -182,7 +181,6 @@ class Arz:
         return
 
     async def update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        self.users = self.load_state()
         chat = update.effective_chat
         user = update.effective_user
         chat_id = chat.id
@@ -263,15 +261,14 @@ class Arz:
             count = len(data)
             message = f'📊 تعداد کل کاربران: {count}\n'
             message += '📋 لیست کاربران\n\n'
-            for user in data:
+            for i, user in enumerate(data, start=1):
                 message += (
-                    f'نام: {user['Name']}\n'
-                    f'آیدی: {user['ID']}\n\n'
+                    f'{i}. {user['Name']} - {user['ID']}\n\n'
                 )
             await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
 
         elif choose == 'messages':
-            await query.edit_message_text('متن مورد نظر را به همراه /send ارسال کنید.', reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text('متن مورد نظر را به همراه /manager ارسال کنید.', reply_markup=InlineKeyboardMarkup(keyboard))
 
         elif choose == 'back':
             await query.edit_message_text('پنل مدیریت فعال شد.⚙️',
@@ -282,25 +279,50 @@ class Arz:
                 message_id=update.message.message_id,
                 reaction=['\U0001f44d']
             )
-        
-        text = update.message.text
-        if '/manager' not in text:
-            await update.message.reply_text('در پیام باید /manager وجود داشته باشد، مانند:\n/manager سلام این یک پیام ارسالی از طرف مدیر است.')
-            return 
 
-        if text == '/manager':
-            await update.message.reply_text('در پیام باید /manager وجود داشته باشد، مانند:\n/manager سلام این یک پیام ارسالی از طرف مدیر است.')
+        text = update.message.text.strip() if update.message.text else ''
+        if not text.startswith('/manager'):
+            await update.message.reply_text('در پیام باید /manager وجود داشته باشد، مانند:\n/manager all سلام\n/manager 123456789 سلام')
             return
-        
-        msg = text.replace('/manager', '')
 
-        users = self.load_state()
-        for user in users:
+        rest = text[len('/manager'):].strip()
+        if not rest:
+            await update.message.reply_text('فرمت نامعتبر است. مثال:\n/manager all سلام\n/manager 123456789 سلام')
+            return
+
+        target = rest.split()[0]
+        msg = ' '.join(rest.split()[1:]).strip()
+
+        if not msg:
+            await update.message.reply_text('متن پیام را هم وارد کنید. مثال:\n/manager all سلام\n/manager 123456789 سلام')
+            return
+
+        if target.lower() == 'all':
+            users = self.load_state()
+            sent = 0
+            failed = 0
+            for user in users:
+                chat_id = user.get('ID')
+                if chat_id is None:
+                    continue
+                try:
+                    await context.bot.send_message(chat_id=chat_id, text=msg)
+                    sent += 1
+                except Exception:
+                    failed += 1
+            await update.message.reply_text(f'پیام همگانی به {sent} کاربر ارسال شد.' + (f' | {failed} خطا داشت.' if failed else ''))
+            return
+
+        if target.isdigit() or (target.startswith('-') and target[1:].isdigit()):
             try:
-                await context.bot.send_message(chat_id=user['ID'], text=msg)
-            except:
-                pass
-        await update.message.reply_text('پیام همگانی ارسال شد.')
+                chat_id = int(target)
+                await context.bot.send_message(chat_id=chat_id, text=msg)
+                await update.message.reply_text(f'پیام به آیدی {chat_id} ارسال شد.')
+            except Exception as exc:
+                await update.message.reply_text(f'ارسال به آیدی {target} انجام نشد.\nخطا: {exc}')
+            return
+
+        await update.message.reply_text('آیدی نامعتبر است. مثال:\n/manager all سلام\n/manager 123456789 سلام')
 
     async def send_to_manager(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
@@ -591,14 +613,6 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-        
-async def post_init(application):
-    await application.bot.set_my_commands([
-        BotCommand('start', 'شروع و نمایش منو'),
-        BotCommand('update', 'آپدیت ربات'),
-        BotCommand('send', 'ارسال پیام به مدیر'),
-        BotCommand('help', 'راهنمای دستورات')
-    ])
 
 if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
@@ -610,7 +624,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     application = ApplicationBuilder().token(token).build()
-    application.post_init = post_init
 
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
