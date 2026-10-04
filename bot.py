@@ -523,8 +523,8 @@ class Arz:
                         f" - 🚗 {item['name']}\n"
                         f" - قیمت کارخانه: {item['factory_price_txt']}\n"
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
-                        f" - تغییرات 24 ساعته: {int(item['change_price']):,}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {int(item['disagreement_price']):,}\n"
+                        f" - تغییرات 24 ساعته: {item['change_price']}\n"
+                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
                 await self.send_long_message(update, message)
@@ -568,8 +568,8 @@ class Arz:
                         f" - 🚗 {item['name']}\n"
                         f" - قیمت کارخانه: {item['factory_price_txt']}\n"
                         f" - قیمت بازار: {item['bazar_price_txt']}\n"
-                        f" - تغییرات 24 ساعته: {int(item['change_price']):,}\n"
-                        f" - اختلاف قیمت کارخانه و بازار: {int(item['disagreement_price']):,}\n"
+                        f" - تغییرات 24 ساعته: {item['change_price']}\n"
+                        f" - اختلاف قیمت کارخانه و بازار: {item['disagreement_price']}\n"
                         f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     )
                 await self.send_long_message(update, message)
