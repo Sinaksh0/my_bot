@@ -14,7 +14,7 @@ CAR_API = os.getenv('Car_API')
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
 ADMIN_ID = int(os.getenv('Admin_ID'))
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 
 class Arz:
     def __init__(self):
@@ -204,10 +204,8 @@ class Arz:
         
         text = (f'نسخه: v{VERSION}\n\n'
                 '<b> تغییرات:</b>\n'
-                '1. امکان ارسال پیام به مالک ربات، با دستور /send\n'
-                'نمونه ارسال پیام:\n/send سلام این یک پیام ارسالی به مدیر است.\n\n'
-                '<b>2. ماشین حساب تبدیل ارز (دلار، یورو) به ریال به منوی اصلی اضافه شد.</b>\n'
-                'با ارسال (23 دلار) یا (10 یورو) مقدار ارز به ریال تبدیل می‌شود.\n\n'
+                '1. تبدیل طلا به ریال اضافه شد. مثال:\n<b>20 گرم طلا</b> یا <b>35 طلا</b>\n\n'
+                '2. ارسال اعداد اعشاری برای تبدیل قیمت اضافه شد. مثال:\n<b>0.35 دلار</b> یا <b>0.4 یورو</b> و یا <b>20.5 گرم طلا</b>'
         )
         
         await update.message.reply_text(text=text, parse_mode='HTML', reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
@@ -576,52 +574,52 @@ class Arz:
                 return
 
             elif text == '🧮 تبدیل ارز به ریال 🧮':
-                await update.message.reply_text('برای تبدیل ارز های (دلار، یورو) مقدار به همراه نام ارز را وارد کنید. مانند:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا یا 30 طلا</b>', 
+                await update.message.reply_text('برای تبدیل طلا و ارز های (دلار، یورو) مقدار به همراه نام وارد کنید. مانند:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا یا 30 طلا</b>', 
                     parse_mode='HTML')
                 return
 
-            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+\s+دلار\s*', text):
+            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', text):
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
-                amount_text = normalized_text.split()[0]
+                amount_text = normalized_text.split()[0].replace(',', '.')
                 data = await self.get_arz()
                 dollar = data['currency_prices']['items'][0]
-                toman = int(amount_text) * int(dollar['sell_price']['value'])
-                time = datetime.now(self.tehran).strftime('%Y/%m/%d | %H:%M:%S')
+                toman = float(amount_text) * int(dollar['sell_price']['value'])
+                time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
 
                 await update.message.reply_text(
                     f'\U0001f4b5 {amount_text} دلار = {int(toman):,} تومان\n\n<b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
             
-            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+\s+یورو\s*', text):
+            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', text):
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
-                amount_text = normalized_text.split()[0]
+                amount_text = normalized_text.split()[0].replace(',', '.')
                 data = await self.get_arz()
                 euro = data['currency_prices']['items'][1]
-                toman = int(amount_text) * int(euro['sell_price']['value'])
-                time = datetime.now(self.tehran).strftime('%Y/%m/%d | %H:%M:%S')
+                toman = float(amount_text) * int(euro['sell_price']['value'])
+                time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
 
                 await update.message.reply_text(
                     f'💷 {amount_text} یورو = {int(toman):,} تومان\n\n<b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
 
-            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+\s+(?:گرم\s+)?طلا\s*', text):
+            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+(?:گرم\s+)?طلا\s*', text):
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
-                amount_text = normalized_text.split()[0]
+                amount_text = normalized_text.split()[0].replace(',', '.')
                 data = await self.get_arz()
                 tala = data['gold_prices']['items'][1]['price']
-                toman = int(amount_text) * int(tala)
-                time = datetime.now(self.tehran).strftime('%Y/%m/%d | %H:%M:%S')
+                toman = float(amount_text) * int(tala)
+                time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
 
                 await update.message.reply_text(
                     f'💰 {amount_text} گرم طلا = {int(toman):,}\n\n<b>زمان:</b> {time}', parse_mode='HTML'
