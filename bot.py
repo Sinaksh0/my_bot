@@ -141,7 +141,7 @@ class Arz:
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
         users = self.load_state()
-        if not self.users:
+        if not users:
             return
         
         for chat_id in users:
