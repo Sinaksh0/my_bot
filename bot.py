@@ -591,33 +591,45 @@ class Arz:
                 return
 
             elif text == 'دلار':
+                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 usd = await self.get_arz(f'{CHART_API}/api/history.json')
+                await sent.edit_text('در حال ارسال نمودار...')
+                await sent.delete()
+                
                 caption = (
                     f'\U0001f4b5 قیمت دلار: {int(usd['latest']['price_toman']):,} تومان\n'
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                update.message.reply_photo(photo='https://github.com/itsyebekhe/nabz/raw/main/usd_chart.png', caption=caption)
+                await update.message.reply_photo(photo='https://github.com/itsyebekhe/nabz/raw/main/usd_chart.png', caption=caption)
                 return
 
             elif text == 'یورو':
-                eur = self.get_arz(f'{CHART_API}/api/history_eur.json')
+                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
+                eur = await self.get_arz(f'{CHART_API}/api/history_eur.json')
+                await sent.edit_text('در حال ارسال نمودار...')
+                await sent.delete()
+                
                 caption = (
                     f'💷 قیمت یورو: {int(eur['latest']['price_toman']):,} تومان\n'
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/eur_chart.png', caption=caption)
+                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/eur_chart.png', caption=caption)
                 return
 
             elif text == 'طلا':
-                gold = self.get_arz(f'{CHART_API}/api/history_gold_18k.json')
+                sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
+                gold = await self.get_arz(f'{CHART_API}/api/history_gold_18k.json')
+                await sent.edit_text('در حال ارسال نمودار...')
+                await sent.delete()
+
                 caption = (
                     f'💰 قیمت طلا: {int(gold['latest']['price_toman']):,} تومان\n'
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/gold_18k_chart.png', caption=caption)
+                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/gold_18k_chart.png', caption=caption)
                 return
 
             elif text == '🧮 تبدیل ارز به ریال 🧮':
