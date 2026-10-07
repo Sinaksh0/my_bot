@@ -17,7 +17,7 @@ OIL = os.getenv('Oil')
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
 ADMIN_ID = int(os.getenv('Admin_ID'))
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 class Arz:
     def __init__(self):
@@ -601,7 +601,7 @@ class Arz:
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                await update.message.reply_photo(photo='https://github.com/itsyebekhe/nabz/raw/main/usd_chart.png', caption=caption)
+                await update.message.reply_photo(photo='https://github.com/itsyebekhe/nabz/raw/main/charts/usd.png', caption=caption)
                 return
 
             elif text == 'یورو':
@@ -615,7 +615,7 @@ class Arz:
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/eur_chart.png', caption=caption)
+                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/charts/eur.png', caption=caption)
                 return
 
             elif text == 'طلا':
@@ -629,7 +629,7 @@ class Arz:
                     f'🕒 آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')}'
                 )
 
-                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/gold_18k_chart.png', caption=caption)
+                await update.message.reply_photo(photo=f'https://github.com/itsyebekhe/nabz/raw/main/charts/gold_18k.png', caption=caption)
                 return
 
             elif text == '🧮 تبدیل ارز به ریال 🧮':
