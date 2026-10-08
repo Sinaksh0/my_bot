@@ -17,7 +17,7 @@ OIL = os.getenv('Oil')
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
 ADMIN_ID = int(os.getenv('Admin_ID'))
-VERSION = '1.1.1'
+VERSION = '1.2.0'
 
 class Arz:
     def __init__(self):
@@ -58,16 +58,14 @@ class Arz:
             ['🔙 بازگشت']
         ]
 
-    def load_state(self):
-        url = 'https://raw.githubusercontent.com/Sinaksh0/my_bot/refs/heads/main/users.json'
+    def load_state(self) -> list:
+        url = 'https://raw.githubusercontent.com/Sinaksh0/warp-config/refs/heads/main/users.json'
         try:
             response = requests.get(url, timeout=15)
             if response.status_code != 200:
                 return []
 
             body = response.text.strip()
-            if not body:
-                return []
 
             try:
                 decrypt = self.fernet.decrypt(body).decode()
@@ -83,12 +81,43 @@ class Arz:
             return data["users"]
         except requests.RequestException:
             return []
+
+    def load_price(self) -> dict:
+        url = 'https://raw.githubusercontent.com/Sinaksh0/warp-config/refs/heads/main/prices.json'
+
+        response = requests.get(url, timeout=15)
+        return response.json()
+    
+    def upload_price(self, prices):
+        url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/prices.json'
+
+        headers = {
+            'Authorization': f'Bearer {GIT}',
+            'Accept': 'application/vnd.github+json'
+        }
+
+        data = json.dumps(prices, ensure_ascii=False).encode()
+        encoded = base64.b64encode(data).decode('utf-8')
+
+        response = requests.get(url, headers=headers, timeout=20)
+
+        body = {
+            'message': 'Auto updating prices',
+            'content': encoded,
+            'branch': 'main'
+        }
+
+        if response.status_code == 200:
+            body['sha'] = response.json().get('sha')
+
+        requests.put(url, headers=headers, json=body, timeout=20)
+        return
     
     def upload_github(self, data):
         if not GIT:
             raise RuntimeError("GITHUB_TOKEN is not set")
 
-        url = 'https://api.github.com/repos/Sinaksh0/my_bot/contents/users.json'
+        url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/users.json'
         headers = {
             "Authorization": f"Bearer {GIT}",
             "Accept": "application/vnd.github+json"
@@ -114,6 +143,7 @@ class Arz:
             body["sha"] = resp.json().get("sha")
 
         requests.put(url, headers=headers, json=body, timeout=20)
+        return
 
     def check_user(self, name: str, chat_id: int):
         users = self.load_state()
@@ -124,11 +154,11 @@ class Arz:
                 break
         
         if flag:
-            self.users.append({
+            users.append({
                 "Name": name,
                 "ID": chat_id
             })
-            self.upload_github(self.users)
+            self.upload_github(users)
         return
     
     async def get_arz(self, url):
@@ -348,19 +378,23 @@ class Arz:
         for i in range(0, len(message), chunk_size):
             await update.message.reply_text(message[i:i + chunk_size])
 
+    async def reaction(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+            message_id=update.message.message_id,
+            reaction=['\U0001f44d']
+        )
+        return
+    
     async def take_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
+        self.data = self.load_price()
 
         if text is None:
             return
-
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
         
         try:
             if text == '💱 قیمت ارز ها 💱':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 dollar = await self.get_arz(USD_API)
@@ -388,44 +422,111 @@ class Arz:
                 return
             
             elif text == '🪙 قیمت سکه 🪙':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 data = data['gold_prices']['items']
 
-                await sent.edit_text('در حال ارسال...')
-                await sent.delete()
+                today = datetime.now(self.tehran).strftime('%m/%d/%Y')
+                emami_data = self.data['emami'] if self.data['date'] == today else []
+                azadi_data = self.data['azadi'] if self.data['date'] == today else []
+                nim_data = self.data['nim'] if self.data['date'] == today else []
+                rob_data = self.data['rob'] if self.data['date'] == today else []
+
+                if self.data.get('date') != today:
+                    self.data['date'] = today
 
                 message = "🪙 قیمت سکه 🪙\n\n"
                 emami = data[2]
                 azadi = data[3]
                 nim = data[4]
                 rob = data[5]
+
+                if int(emami['price']) not in emami_data:
+                    emami_data.append(int(emami['price']))
+                    self.data['emami'] = emami_data
+                    flag = True
+
+                if int(azadi['price']) not in azadi_data:
+                    azadi_data.append(int(azadi['price']))
+                    self.data['azadi'] = azadi_data
+                    flag = True
+
+                if int(nim['price']) not in nim_data:
+                    nim_data.append(int(nim['price']))
+                    self.data['nim'] = nim_data
+                    flag = True
+
+                if int(rob['price']) not in rob_data:
+                    rob_data.append(int(rob['price']))
+                    self.data['rob'] = rob_data
+                    flag = True
+
+                max_emami = max(emami_data)
+                min_emami = min(emami_data)
+                max_azadi = max(azadi_data)
+                min_azadi = min(azadi_data)
+                max_nim = max(nim_data)
+                min_nim = min(nim_data)
+                max_rob = max(rob_data)
+                min_rob = min(rob_data)
+
+                await sent.edit_text('در حال ارسال...')
+                await sent.delete()
+
                 message += (
                     f" - 🪙 سکه امامی\n"
                     f" - قیمت: {int(emami['price']):,} {emami['currency']}\n"
+                    f" - بیشینه: {max_emami:,} تومان\n"
+                    f" - کمینه: {min_emami:,} تومان\n"
                     f" - حباب قیمتی: {int(emami['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🪙 سکه بهار آزادی\n"
                     f" - قیمت: {int(azadi['price']):,} {azadi['currency']}\n"
+                    f" - بیشینه: {max_azadi:,} تومان\n"
+                    f" - کمینه: {min_azadi:,} تومان\n"
                     f" - حباب قیمتی: {int(azadi['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🪙 نیم سکه\n"
                     f" - قیمت: {int(nim['price']):,} {nim['currency']}\n"
+                    f" - بیشینه: {max_nim:,} تومان\n"
+                    f" - کمینه: {min_nim:,} تومان\n"
                     f" - حباب قیمتی: {int(nim['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🪙 ربع سکه\n"
                     f" - قیمت: {int(rob['price']):,} {rob['currency']}\n"
+                    f" - بیشینه: {max_rob:,} تومان\n"
+                    f" - کمینه: {min_rob:,} تومان\n"
                     f" - حباب قیمتی: {int(rob['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
                 await update.message.reply_text(message)
+
+                if flag:
+                    self.upload_price(self.data)
                 return
             
             elif text == '💰 قیمت طلا 💰':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 data = data['gold_prices']['items']
                 tala_18 = data[1]
+
+                flag = False
+                today = datetime.now(self.tehran).strftime('%m/%d/%Y')
+                tala_data = self.data['gold'] if self.data['date'] == today else []
+
+                if self.data['date'] != today:
+                    self.data['date'] = today
+
+                if int(tala_18['price']) not in tala_data:
+                    tala_data.append(int(tala_18['price']))
+                    self.data['gold'] = tala_data
+                    flag = True
+
+                max_price = max(tala_data)
+                min_price = min(tala_data)
 
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
@@ -434,17 +535,36 @@ class Arz:
                 message += (
                     f" - 💰 طلای 18 عیار\n"
                     f" - قیمت: {int(tala_18['price']):,} {tala_18['currency']}\n"
+                    f" - بیشینه: {max_price:,} تومان\n"
+                    f" - کیمینه: {min_price:,} تومان\n"
                     f" - حباب قیمتی: {int(tala_18['bubble']['amount']):,}\n"
                     f" - اپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                 )
                 await update.message.reply_text(message)
+
+                if flag:
+                    self.upload_price(self.data)
                 return
             
             elif text == '💱 خلاصه قیمت ها 🪙':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 dollar = await self.get_arz(USD_API)
                 oil = await self.get_arz(OIL)
+
+                flag = False
+                today = datetime.now(self.tehran).strftime('%m/%d/%Y')
+                tether_data = self.data['tether'] if self.data['date'] == today else []
+                usd_data = self.data['usd'] if self.data['date'] == today else []
+                eur_data = self.data['eur'] if self.data['date'] == today else []
+                emami_data = self.data['emami'] if self.data['date'] == today else []
+                azadi_data = self.data['azadi'] if self.data['date'] == today else []
+                tala_data = self.data['gold'] if self.data['date'] == today else []
+
+                if self.data.get('date') != today:
+                    self.data['date'] = today
+
 
                 tether = data['crypto_prices']['items'][0]
                 dollar = dollar['sources']['alanchand']
@@ -454,27 +574,83 @@ class Arz:
                 tala_18 = data['gold_prices']['items'][1]
                 oil = oil['items'][0]
 
+                if int(tether['price_toman']) not in tether_data:
+                    tether_data.append(int(tether['price_toman']))
+                    self.data['tether'] = tether_data
+                    flag = True
+
+                if int(dollar['price_toman']) not in usd_data:
+                    usd_data.append(int(dollar['price_toman']))
+                    self.data['usd'] = usd_data
+                    flag = True
+
+                if int(eurro['sell_price']['value']) not in eur_data:
+                    eur_data.append(int(eurro['sell_price']['value']))
+                    self.data['eur'] = eur_data
+                    flag = True
+
+                if int(seke_emami['price']) not in emami_data:
+                    emami_data.append(int(seke_emami['price']))
+                    self.data['emami'] = emami_data
+                    flag = True
+
+                if int(seke['price']) not in azadi_data:
+                    azadi_data.append(int(seke['price']))
+                    self.data['azadi'] = azadi_data
+                    flag = True
+
+                if int(tala_18['price']) not in tala_data:
+                    tala_data.append(int(tala_18['price']))
+                    self.data['gold'] = tala_data
+                    flag = True
+
+                tether_max = max(tether_data)
+                tether_min = min(tether_data)
+                usd_max = max(usd_data)
+                usd_min = min(usd_data)
+                eur_max = max(eur_data)
+                eur_min = min(eur_data)
+                emami_max = max(emami_data)
+                emami_min = min(emami_data)
+                azadi_max = max(azadi_data)
+                azadi_min = min(azadi_data)
+                tala_max = max(tala_data)
+                tala_min = min(tala_data)
+
+
                 message = '💱 خلاصه قیمت ها 🪙\n\n'
                 message += (
                     f" - \U0001f4b8 قیمت {tether['name_persian']}\n"
                     f" - قیمت: {int(tether['price_toman']):,} تومان\n"
+                    f" - بیشینه: {tether_max:,} تومان\n"
+                    f" - کمینه: {tether_min:,} تومان\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - \U0001f4b5 قیمت دلار\n"
                     f" - قیمت: {int(dollar['price_toman']):,} تومان\n"
+                    f" - بیشینه: {usd_max:,} تومان\n"
+                    f" - کمینه: {usd_min:,} تومان\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 💷 {eurro['name_persian']}\n"
                     f" - قیمت: {int(eurro['sell_price']['value']):,} {eurro['currency']}\n"
+                    f" - بیشینه: {eur_max:,} تومان\n"
+                    f" - کمینه: {eur_min:,} تومان\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🪙 سکه امامی\n"
                     f" - قیمت: {int(seke_emami['price']):,} {seke_emami['currency']}\n"
+                    f" - بیشینه: {emami_max:,} تومان\n"
+                    f" - کمینه: {emami_min:,} تومان\n"
                     f" - حباب قیمتی: {int(seke_emami['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🪙 سکه بهار آزادی\n"
                     f" - قیمت: {int(seke['price']):,} {seke['currency']}\n"
+                    f" - بیشینه: {azadi_max:,} تومان\n"
+                    f" - کمینه: {azadi_min:,} تومان\n"
                     f" - حباب قیمتی: {int(seke['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 💰 طلای 18 عیار\n"
                     f" - قیمت: {int(tala_18['price']):,} {tala_18['currency']}\n"
+                    f" - بیشینه: {tala_max:,} تومان\n"
+                    f" - کمینه: {tala_min:,} تومان\n"
                     f" - حباب قیمتی: {int(tala_18['bubble']['amount']):,}\n"
                     f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
                     f" - 🛢️ {oil['name']}\n"
@@ -485,9 +661,13 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
                 await update.message.reply_text(message)
+
+                if flag:
+                    self.upload_price(self.data)
                 return
             
             elif text == '🚗 خودرو های داخلی 🚗':
+                await self.reaction(update, context)
                 await update.message.reply_text(
                     "🚗 لیست خودرو های داخلی 🚗\nیکی از آنها را انتخاب کنید",
                     reply_markup=ReplyKeyboardMarkup(self.dakhelikeyboard, resize_keyboard=True)
@@ -495,6 +675,7 @@ class Arz:
                 return
 
             elif text == '🚗 خودرو های وارداتی 🚗':
+                await self.reaction(update, context)
                 await update.message.reply_text(
                     "🚗 لیست خودرو های وارداتی 🚗\nیکی از آنها را انتخاب کنید",
                     reply_markup=ReplyKeyboardMarkup(self.carkeyboard, resize_keyboard=True)
@@ -502,6 +683,7 @@ class Arz:
                 return
 
             elif text in '🔙 بازگشت':
+                await self.reaction(update, context)
                 if update.effective_chat.type == 'private' and update.effective_user.id == ADMIN_ID:
                     keyboard = self.admin_keyborad
                 else:
@@ -513,6 +695,7 @@ class Arz:
                 return
 
             elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
 
                 cars = {
@@ -546,6 +729,7 @@ class Arz:
                 return
 
             elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
 
                 cars = {
@@ -591,6 +775,7 @@ class Arz:
                 return
 
             elif text == 'دلار':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 usd = await self.get_arz(f'{CHART_API}/api/history.json')
                 await sent.edit_text('در حال ارسال نمودار...')
@@ -605,6 +790,7 @@ class Arz:
                 return
 
             elif text == 'یورو':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 eur = await self.get_arz(f'{CHART_API}/api/history_eur.json')
                 await sent.edit_text('در حال ارسال نمودار...')
@@ -619,6 +805,7 @@ class Arz:
                 return
 
             elif text == 'طلا':
+                await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 gold = await self.get_arz(f'{CHART_API}/api/history_gold_18k.json')
                 await sent.edit_text('در حال ارسال نمودار...')
@@ -633,11 +820,13 @@ class Arz:
                 return
 
             elif text == '🧮 تبدیل ارز به ریال 🧮':
+                await self.reaction(update, context)
                 await update.message.reply_text('برای تبدیل طلا و ارز های (دلار، یورو) مقدار به همراه نام وارد کنید. مانند:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا یا 30 طلا</b>', 
                     parse_mode='HTML')
                 return
 
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', text):
+                await self.reaction(update, context)
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
@@ -654,6 +843,7 @@ class Arz:
                 return
             
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', text):
+                await self.reaction(update, context)
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
@@ -670,6 +860,7 @@ class Arz:
                 return
 
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+(?:گرم\s+)?طلا\s*', text):
+                await self.reaction(update, context)
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
