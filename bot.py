@@ -403,7 +403,7 @@ class Arz:
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                indexs = [6, 1, 2, 3, 4, 9, 15, 19]
+                indexs = [5, 0, 1, 2, 3, 8, 14, 18]
                 message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
                 message += (
                     f" - قیمت دلار\n"
@@ -568,7 +568,7 @@ class Arz:
 
                 tether = data['crypto_prices']['items'][0]
                 dollar = dollar['sources']['alanchand']
-                eurro = data['currency_prices']['items'][1]
+                eurro = data['currency_prices']['items'][0]
                 seke_emami = data['gold_prices']['items'][2]
                 seke = data['gold_prices']['items'][3]
                 tala_18 = data['gold_prices']['items'][1]
