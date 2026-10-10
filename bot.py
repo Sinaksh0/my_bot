@@ -90,8 +90,9 @@ class Arz:
     def load_hours(self) -> list:
         url = 'https://raw.githubusercontent.com/Sinaksh0/warp-config/refs/heads/main/hours.json'
 
-        response = requests.get(url, timeout=15)
-        return response.json()
+        response = requests.get(url, timeout=15).text
+        result = json.loads(response)
+        return result
     
     def upload_price(self, prices):
         url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/prices.json'
@@ -352,7 +353,7 @@ class Arz:
                 'job_name': job_name
             })
 
-        self.upload_hours(self.set)
+        self.upload_hours(set_hour)
         await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {times} انجام شد')
         return
 
