@@ -925,9 +925,6 @@ def auto_set_hours(job_queue):
         chat_id = set['ID']
         job_name = set['job_name']
 
-        for job in job_queue.get_jobs_by_name(job_name):
-            job.schedule_removal()
-
         for h in hours:
             job_queue.run_daily(arz.send_daily, time=time(h, 0, tzinfo=arz.tehran), chat_id=chat_id, name=job_name)
     return
@@ -961,6 +958,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
