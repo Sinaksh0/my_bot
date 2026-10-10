@@ -1,5 +1,3 @@
-from enum import auto
-
 import requests
 import os
 import json
