@@ -529,7 +529,7 @@ class Arz:
             f" - کمینه: {tether_min:,} تومان\n"
             f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
             f" - \U0001f4b5 قیمت دلار\n"
-            f" - <b>قیمت: {int(dollar['price_toman']):,} تومان</b>\n"
+            f" - <b>قیمت: {int(dollar['sell_price']['value']):,} تومان</b>\n"
             f" - بیشینه: {usd_max:,} تومان\n"
             f" - کمینه: {usd_min:,} تومان\n"
             f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
