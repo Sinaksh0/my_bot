@@ -305,17 +305,17 @@ class Arz:
             try:
                 if ":" in arg:
                     h, m = map(int, arg.split(":"))
-                    hours = hour.append(h)
+                    hour.append(h)
                     minute.append(m)
                 else:
                     h = int(arg)
-                    hours = hour.append(h)
+                    hour.append(h)
                     minute.append(0)
             except ValueError:
                 await update.message.reply_text('ساعت ها و دقیقه ها باید عدد باشد!')
                 return
         
-        for h in hours:
+        for h in hour:
             if not 0 <= h <=23:
                 await update.message.reply_text("ساعت باید بین 0 تا 23 باشد.")
                 return
@@ -342,12 +342,12 @@ class Arz:
         set_hour = self.load_hours()
         for set in set_hour:
             if set['ID'] == update.effective_chat.id:
-                set['Hours'] = hours
+                set['Hours'] = times
                 break
         else:
             set_hour.append({
                 'Name': name,
-                'Hours': hours,
+                'Hours': times,
                 'ID': update.effective_chat.id,
                 'job_name': job_name
             })
@@ -954,12 +954,12 @@ def auto_set_hours(job_queue):
     if not arz.set:
         return
     for set in arz.set:
-        hours = set['Hours']
+        times = set['Hours']
         chat_id = set['ID']
         job_name = set['job_name']
 
-        for h in hours:
-            job_queue.run_daily(arz.send_daily, time=time(h, 0, tzinfo=arz.tehran), chat_id=chat_id, name=job_name)
+        for h, m in times:
+            job_queue.run_daily(arz.send_daily, time=time(h, m, tzinfo=arz.tehran), chat_id=chat_id, name=job_name)
     return
     
 async def post_init(application):
@@ -992,6 +992,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
