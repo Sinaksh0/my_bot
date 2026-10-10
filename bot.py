@@ -325,12 +325,17 @@ class Arz:
         for h in hours:
             context.job_queue.run_daily(self.send_daily, time=time(h, 0, tzinfo=self.tehran), chat_id=update.effective_chat.id, name=job_name)
 
-        self.set.append({
-            'Name': update.effective_user.full_name,
-            'Hours': hours,
-            'ID': update.effective_chat.id,
-            'job_name': job_name
-        })
+        for set in self.set:
+            if set['ID'] == update.effective_chat.id:
+                set['Hours'] = hours
+                break
+        else:
+            self.set.append({
+                'Name': update.effective_user.full_name,
+                'Hours': hours,
+                'ID': update.effective_chat.id,
+                'job_name': job_name
+            })
 
         self.upload_hours(self.set)
         await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {hours} انجام شد')
