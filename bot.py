@@ -22,8 +22,6 @@ class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.fernet = Fernet(KEY)
-        self.data = self.load_price()
-
         self.set = self.load_hours()
 
         self.keyboard = [
@@ -971,6 +969,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    #application.job_queue.run_once(arz.check_update, when=5)
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
