@@ -1,3 +1,5 @@
+from enum import auto
+
 import requests
 import os
 import json
@@ -25,7 +27,6 @@ class Arz:
         self.data = self.load_price()
 
         self.set = self.load_hours()
-        self.auto_set_hours(ContextTypes.DEFAULT_TYPE)
 
         self.keyboard = [
             ['💱 خلاصه قیمت ها 🪙'],
@@ -339,22 +340,6 @@ class Arz:
 
         self.upload_hours(self.set)
         await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {hours} انجام شد')
-        return
-
-    def auto_set_hours(self, context: ContextTypes.DEFAULT_TYPE):
-        if not self.set:
-            return
-        for set in self.set:
-            hours = set['Hours']
-            chat_id = set['ID']
-            job_name = set['job_name']
-
-            for job in context.job_queue.get_jobs_by_name(job_name):
-                job.schedule_removal()
-
-            for h in hours:
-                context.job_queue.run_daily(self.send_daily, time=time(h, 0, tzinfo=self.tehran), chat_id=chat_id, name=job_name)
-
         return
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -941,8 +926,27 @@ class Arz:
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
-        
+
+def auto_set_hours(job_queue):
+    arz = Arz()
+
+    if not arz.set:
+        return
+    for set in arz.set:
+        hours = set['Hours']
+        chat_id = set['ID']
+        job_name = set['job_name']
+
+        for job in job_queue.get_jobs_by_name(job_name):
+            job.schedule_removal()
+
+        for h in hours:
+            job_queue.run_daily(arz.send_daily, time=time(h, 0, tzinfo=arz.tehran), chat_id=chat_id, name=job_name)
+    return
+    
 async def post_init(application):
+    auto_set_hours(application.job_queue)
+    
     await application.bot.set_my_commands([
         BotCommand('start', 'شروع و نمایش منو'),
         BotCommand('update', 'آپدیت ربات'),
