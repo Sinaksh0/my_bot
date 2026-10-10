@@ -15,7 +15,7 @@ OIL = os.getenv('Oil')
 ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 
 class Arz:
     def __init__(self):
@@ -271,7 +271,7 @@ class Arz:
                 '<b> تغییرات:</b>\n'
                 '1. ارسال خودکار قیمت ها با دستور /set و لیستی از ساعت ها برای ارسال در زمان های مشخص. مانند:\n'
                 '/set 03 10 18\n\n'
-                '2. بیشینه و کمینه قیمت ها اضافه شد.'
+                '2. رفع ایرادات قیمت های ارز.'
         )
         
         await update.message.reply_text(text=text, parse_mode='HTML', reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
@@ -482,8 +482,8 @@ class Arz:
             self.data['tether'] = tether_data
             flag = True
 
-        if int(dollar['price_toman']) not in usd_data:
-            usd_data.append(int(dollar['price_toman']))
+        if int(dollar['sell_price']['value']) not in usd_data:
+            usd_data.append(int(dollar['sell_price']['value']))
             self.data['usd'] = usd_data
             flag = True
 
