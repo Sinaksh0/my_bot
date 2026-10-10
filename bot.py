@@ -15,7 +15,7 @@ OIL = os.getenv('Oil')
 ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
-VERSION = '1.2.2'
+VERSION = '1.3.0'
 
 class Arz:
     def __init__(self):
@@ -87,13 +87,10 @@ class Arz:
         response = requests.get(url, timeout=15)
         return response.json()
 
-    def load_hours(self) -> dict:
+    def load_hours(self) -> list:
         url = 'https://raw.githubusercontent.com/Sinaksh0/warp-config/refs/heads/main/hours.json'
 
         response = requests.get(url, timeout=15)
-        if response.status_code != 200:
-            return []
-        
         return response.json()
     
     def upload_price(self, prices):
@@ -153,7 +150,7 @@ class Arz:
         requests.put(url, headers=headers, json=body, timeout=20)
         return
 
-    def upload_hours(self, hourss):
+    def upload_hours(self, hours):
         url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/hours.json'
 
         headers = {
@@ -161,7 +158,7 @@ class Arz:
             'Accept': 'application/vnd.github+json'
         }
 
-        data = json.dumps(hourss, ensure_ascii=False).encode()
+        data = json.dumps(hours, ensure_ascii=False).encode()
         encoded = base64.b64encode(data).decode('utf-8')
 
         response = requests.get(url, headers=headers, timeout=20)
@@ -206,14 +203,24 @@ class Arz:
         users = self.load_state()
         if not users:
             return
-        
-        for chat_id in users:
-            await context.bot.send_message(
-                chat_id=chat_id['ID'],
-                text=f'آپدیت نسخه v{VERSION} منتشر شد.\n\n'
-                     '- برای اعمال آپدیت بر روی دستور زیر بزنید:\n'
-                     '/update'
-            )
+
+        new_users = []
+        for user in users:
+            try:
+                await context.bot.send_message(
+                    chat_id=user['ID'],
+                    text=f'نسخه v{VERSION} منتشر شد.\n\n'
+                        '- برای اعمال آپدیت بر روی دستور زیر بزنید:\n'
+                        '/update'
+                )
+                new_users.append(user)
+
+            except Exception:
+                pass
+
+        if new_users != users:
+            self.upload_github(new_users)
+
         return
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -233,10 +240,7 @@ class Arz:
 
         self.check_user(name, chat_id)
 
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f60d']
-            )
+        await self.reaction(update, context)
         
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
@@ -262,26 +266,21 @@ class Arz:
 
         self.check_user(name, chat_id)
 
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
 
         text = (f'نسخه: v{VERSION}\n\n'
-                '<b> تغییرات:</b>\n'
-                '1. ارسال خودکار قیمت ها با دستور /set و لیستی از ساعت ها برای ارسال در زمان های مشخص. مانند:\n'
-                '/set 03 10 18\n\n'
-                '2. رفع ایرادات قیمت های ارز.'
+                '<b>تغییرات:</b>\n'
+                '1. اضافه شدن دقیقه برای ست کردن زمان‌بندی ارسال خودکار قیمت ها. مانند:\n'
+                '/set 8:15 10:40 18 22\n\n'
+                '2. اضافه شدن کامند (/unset) برای غیرفعال سازی زمان‌بندی ارسال خودکار\n'
+                'با ارسال کامند زمان‌بندی رو غیر فعال کنید.'
         )
         
         await update.message.reply_text(text=text, parse_mode='HTML', reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
         return
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
         
         text = (
             '📋 دستورات ربات:\n\n'
@@ -294,23 +293,36 @@ class Arz:
         await update.message.reply_text(text)
 
     async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
         
         if len(context.args) == 0:
-            await update.message.reply_text('لطفا ساعت ها را وارد کنید مانند:\n/set 03 10 18 ...')
+            await update.message.reply_text('لطفا ساعت ها را وارد کنید مانند:\n/set 8:15 10:35 18 22...')
             return
 
-        try:
-            hours = list(int(h) for h in context.args)
-        except ValueError:
-            await update.message.reply_text('ساعت ها باید عدد باشد!')
-            return
+        hour = []
+        minute = []
+        for arg in context.args:
+            try:
+                if ":" in arg:
+                    h, m = map(int, arg.split(":"))
+                    hours = hour.append(h)
+                    minute.append(m)
+                else:
+                    h = int(arg)
+                    hours = hour.append(h)
+                    minute.append(0)
+            except ValueError:
+                await update.message.reply_text('ساعت ها و دقیقه ها باید عدد باشد!')
+                return
+        
         for h in hours:
             if not 0 <= h <=23:
                 await update.message.reply_text("ساعت باید بین 0 تا 23 باشد.")
+                return
+
+        for min in minute:
+            if not 0 <= min < 60:
+                await update.message.reply_text("دقیقه باید بین 0 تا 59 باشد.")
                 return
             
         job_name = f'chat_id_{update.effective_chat.id}'
@@ -318,33 +330,60 @@ class Arz:
         for job in context.job_queue.get_jobs_by_name(job_name):
             job.schedule_removal()
 
-        for h in hours:
-            context.job_queue.run_daily(self.send_daily, time=time(h, 0, tzinfo=self.tehran), chat_id=update.effective_chat.id, name=job_name)
+        times = list(zip(hour, minute))
+        for h, m in times:
+            context.job_queue.run_daily(self.send_daily, time=time(h, m, tzinfo=self.tehran), chat_id=update.effective_chat.id, name=job_name)
 
-        for set in self.set:
+        if update.effective_chat.type in ['group', 'supergroup']:
+            name = update.effective_chat.title
+        else:
+            name = update.effective_user.full_name
+
+        set_hour = self.load_hours()
+        for set in set_hour:
             if set['ID'] == update.effective_chat.id:
                 set['Hours'] = hours
                 break
         else:
-            self.set.append({
-                'Name': update.effective_user.full_name,
+            set_hour.append({
+                'Name': name,
                 'Hours': hours,
                 'ID': update.effective_chat.id,
                 'job_name': job_name
             })
 
         self.upload_hours(self.set)
-        await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {hours} انجام شد')
+        await update.message.reply_text(f'زمانبندی ارسال خودکار لیست قیمت برای ساعت های {times} انجام شد')
+        return
+
+    async def unset_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.reaction(update, context)
+
+        job_name = f'chat_id_{update.effective_chat.id}'
+
+        if not context.job_queue.get_jobs_by_name(job_name):
+            await update.message.reply_text('برای شما زمانبدی خودکار تعریف نشده است.')
+            return
+        
+        for job in context.job_queue.get_jobs_by_name(job_name):
+            job.schedule_removal()
+
+        set_hour = self.load_hours()
+
+        for user in set_hour:
+            if user['job_name'] == job_name:
+                set_hour.remove(user)
+                break
+
+        self.upload_hours(set_hour)
+        await update.message.reply_text('زمانبندی خودکار برای شما غیر فعال شد.')
         return
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
 
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
         
         self.inline_keyboard = [
             [InlineKeyboardButton('📊 تعداد کاربران 📊', callback_data='users')],
@@ -383,10 +422,7 @@ class Arz:
                 reply_markup=InlineKeyboardMarkup(self.inline_keyboard))
 
     async def send_to_user(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
 
         text = update.message.text.strip() if update.message.text else ''
         if not text.startswith('/manager'):
@@ -433,10 +469,7 @@ class Arz:
         await update.message.reply_text('آیدی نامعتبر است. مثال:\n/manager all سلام\n/manager 123456789 سلام')
 
     async def send_to_manager(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
-                message_id=update.message.message_id,
-                reaction=['\U0001f44d']
-            )
+        await self.reaction(update, context)
         
         text = update.message.text
         if '/send' not in text:
@@ -529,7 +562,7 @@ class Arz:
             f" - کمینه: {tether_min:,} تومان\n"
             f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
             f" - \U0001f4b5 قیمت دلار\n"
-            f" - <b>قیمت: {int(dollar['sell_price']['value']):,} تومان</b>\n"
+            f" - <b>قیمت: {int(dollar['sell_price']['value']):,} {dollar['currency']}</b>\n"
             f" - بیشینه: {usd_max:,} تومان\n"
             f" - کمینه: {usd_min:,} تومان\n"
             f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
@@ -594,11 +627,11 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 data = data['currency_prices']['items']
-
+                dollar = dollar['sources']['alanchand']
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                indexs = [6, 0, 1, 2, 3, 4, 9, 15, 19]
+                indexs = [6, 1, 2, 3, 4, 9, 15, 19]
                 message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
 
                 for idx in indexs:
@@ -867,9 +900,9 @@ class Arz:
                     '01234567890123456789'
                 ))
                 amount_text = normalized_text.split()[0].replace(',', '.')
-                data = await self.get_arz(USD_API)
-                dollar = data['sources']['alanchand']['price_toman']
-                toman = float(amount_text) * int(dollar)
+                data = await self.get_arz(MAIN_API)
+                dollar = data['currency_prices']['items'][0]
+                toman = float(amount_text) * int(dollar['sell_price']['value'])
                 time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
 
                 await update.message.reply_text(
@@ -885,8 +918,8 @@ class Arz:
                 ))
                 amount_text = normalized_text.split()[0].replace(',', '.')
                 data = await self.get_arz(MAIN_API)
-                euro = data['currency_prices']['items'][1]
-                toman = float(amount_text) * int(euro['sell_price']['value'])
+                eurro = data['currency_prices']['items'][1]
+                toman = float(amount_text) * int(eurro['sell_price']['value'])
                 time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
 
                 await update.message.reply_text(
@@ -894,7 +927,7 @@ class Arz:
                 )
                 return
 
-            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+(?:گرم\s+)?طلا\s*', text):
+            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+(?:گرم\s+)?(?:طلا\s*)?', text):
                 await self.reaction(update, context)
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -935,7 +968,8 @@ async def post_init(application):
     await application.bot.set_my_commands([
         BotCommand('start', 'شروع و نمایش منو'),
         BotCommand('update', 'آپدیت ربات'),
-        BotCommand('set', 'ارسال خودکار قیمت ها'),
+        BotCommand('set', 'زمان‌بندی خودکار قیمت ها'),
+        BotCommand('unset', 'غیر فعالسازی زمان‌بندی خودکار قیمت ها'),
         BotCommand('send', 'ارسال پیام به مدیر'),
         BotCommand('help', 'راهنمای دستورات')
     ])
@@ -945,7 +979,6 @@ if __name__ == '__main__':
     token = os.getenv('BOT_TOKEN')
 
     application = ApplicationBuilder().token(token).build()
-
     application.post_init = post_init
 
     arz = Arz()
@@ -954,10 +987,11 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("manager", arz.send_to_user))
     application.add_handler(CommandHandler("send", arz.send_to_manager))
     application.add_handler(CommandHandler("set", arz.set_hours))
+    application.add_handler(CommandHandler("unset", arz.unset_hours))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    #application.job_queue.run_once(arz.check_update, when=5)
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
