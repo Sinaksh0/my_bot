@@ -10,13 +10,12 @@ from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKe
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, filters
 
 MAIN_API = os.getenv('Main_API')
-USD_API = os.getenv('USD')
 CAR_API = os.getenv('Car_API')
 OIL = os.getenv('Oil')
 ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
 class Arz:
     def __init__(self):
@@ -455,7 +454,6 @@ class Arz:
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
         self.data = self.load_price()
         data = await self.get_arz(MAIN_API)
-        dollar = await self.get_arz(USD_API)
         oil = await self.get_arz(OIL)
 
         flag = False
@@ -472,8 +470,8 @@ class Arz:
 
 
         tether = data['crypto_prices']['items'][0]
-        dollar = dollar['sources']['alanchand']
-        eurro = data['currency_prices']['items'][0]
+        dollar = data['currency_prices']['items'][0]
+        eurro = data['currency_prices']['items'][1]
         seke_emami = data['gold_prices']['items'][2]
         seke = data['gold_prices']['items'][3]
         tala_18 = data['gold_prices']['items'][1]
@@ -595,19 +593,13 @@ class Arz:
                 await self.reaction(update, context)
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
-                dollar = await self.get_arz(USD_API)
                 data = data['currency_prices']['items']
-                dollar = dollar['sources']['alanchand']
+
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                indexs = [6, 1, 2, 3, 4, 9, 15, 19]
+                indexs = [6, 0, 1, 2, 3, 4, 9, 15, 19]
                 message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
-                message += (
-                    f" - قیمت دلار\n"
-                    f" - قیمت: {int(dollar['price_toman']):,} تومان\n"
-                    f" - آپدیت: {datetime.now(self.tehran).strftime('%H:%M:%S')}\n\n"
-                )
 
                 for idx in indexs:
                     item = data[idx]
