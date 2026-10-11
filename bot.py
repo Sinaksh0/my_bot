@@ -241,7 +241,10 @@ class Arz:
 
         self.check_user(name, chat_id)
 
-        await self.reaction(update, context)
+        await context.bot.set_message_reaction(chat_id=update.message.chat_id,
+                message_id=update.message.message_id,
+                reaction=['\U0001f60d']
+            )
         
         await update.message.reply_text(
             f"سلام {name} 👋\nبرای دیدن انواع قیمت ها از گزینه های زیر استفاده کن.",
