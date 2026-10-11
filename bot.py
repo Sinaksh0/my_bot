@@ -628,11 +628,11 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 data = data['currency_prices']['items']
-                dollar = dollar['sources']['alanchand']
+                
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
-                indexs = [6, 1, 2, 3, 4, 9, 15, 19]
+                indexs = [0, 1, 6, 2, 3, 4, 9, 15, 19]
                 message = "\U0001f4b5 قیمت ارزها \U0001f4b5\n\n"
 
                 for idx in indexs:
