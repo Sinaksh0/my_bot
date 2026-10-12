@@ -15,7 +15,7 @@ OIL = os.getenv('Oil')
 ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 KEY = os.getenv('Key')
-VERSION = '1.3.0'
+VERSION = '1.3.1'
 
 class Arz:
     def __init__(self):
@@ -366,7 +366,7 @@ class Arz:
         job_name = f'chat_id_{update.effective_chat.id}'
 
         if not context.job_queue.get_jobs_by_name(job_name):
-            await update.message.reply_text('برای شما زمانبدی خودکار تعریف نشده است.')
+            await update.message.reply_text('برای شما زمان‌بندی خودکار تعریف نشده است.')
             return
         
         for job in context.job_queue.get_jobs_by_name(job_name):
@@ -380,7 +380,7 @@ class Arz:
                 break
 
         self.upload_hours(set_hour)
-        await update.message.reply_text('زمانبندی خودکار برای شما غیر فعال شد.')
+        await update.message.reply_text('زمان‌بندی خودکار برای شما غیر فعال شد.')
         return
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -631,7 +631,6 @@ class Arz:
                 sent = await update.message.reply_text('در حال دریافت اطلاعات... لطفاً صبر کنید.')
                 data = await self.get_arz(MAIN_API)
                 data = data['currency_prices']['items']
-                
                 await sent.edit_text('در حال ارسال...')
                 await sent.delete()
 
@@ -931,7 +930,7 @@ class Arz:
                 )
                 return
 
-            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+(?:گرم\s+)?(?:طلا\s*)?', text):
+            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:گرم(?:\s+طلا)?|طلا)\s*', text):
                 await self.reaction(update, context)
                 normalized_text = text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -947,7 +946,7 @@ class Arz:
                     f'💰 {amount_text} گرم طلا = {int(toman):,}\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
-            
+
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
             return
@@ -956,19 +955,22 @@ def auto_set_hours(job_queue):
     arz = Arz()
 
     if not arz.set:
-        return
-    for set in arz.set:
-        times = set['Hours']
-        chat_id = set['ID']
-        job_name = set['job_name']
+        return False
 
-        for h, m in times:
-            job_queue.run_daily(arz.send_daily, time=time(h, m, tzinfo=arz.tehran), chat_id=chat_id, name=job_name)
-    return
+    for schedule in arz.set:
+        for hour, minute in schedule['Hours']:
+            job_queue.run_daily(arz.send_daily, time=time(hour, minute, tzinfo=arz.tehran), chat_id=schedule['ID'], name=schedule['job_name'])
+
+    return True
     
 async def post_init(application):
-    auto_set_hours(application.job_queue)
-    
+    data = auto_set_hours(application.job_queue)
+
+    if data:
+        await application.bot.send_message(chat_id=ADMIN_ID, text='زمان‌بندی ها برای تمام اعضا فعال شد.')
+    else:
+        await application.bot.send_message(chat_id=ADMIN_ID, text='زمان‌بندی اجرا نشد!.')
+
     await application.bot.set_my_commands([
         BotCommand('start', 'شروع و نمایش منو'),
         BotCommand('update', 'آپدیت ربات'),
