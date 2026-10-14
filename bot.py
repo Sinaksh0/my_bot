@@ -374,13 +374,15 @@ class Arz:
         await self.reaction(update, context)
         user_hour = self.load_hours()
 
-        flag = False
+        flag = True
         for user in user_hour:
             if user['ID'] == update.effective_chat.id:
                 text = '🗓️ <b>زمان‌بندی فعال شما:</b>\n\n'
                 for hour, minute in user['Hours']:
                     text += f'🕒 {hour:02d}:{minute:02d}\n'
-                flag = True
+                flag = False
+                break
+            
         if flag:
             text = 'ℹ️ هنوز زمان‌بندی‌ای برای این گفتگو ثبت نشده.\nبرای تنظیم ساعت گزارش، دستور /set را بفرست.'
 
