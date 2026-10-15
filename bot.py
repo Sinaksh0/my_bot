@@ -17,7 +17,7 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 class Arz:
     def __init__(self):
@@ -857,7 +857,7 @@ class Arz:
 
                 message = ""
                 for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{int(item['disagreement_price']):,}</td></tr>"
+                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
                 html = f"""
                 <h3>🚗 لیست قیمت خودروهای {text} 🚗</h3>
@@ -907,7 +907,7 @@ class Arz:
 
                 message = ""
                 for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{int(item['disagreement_price']):,}</td></tr>"
+                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
                 html = f"""
                 <h3>🚗 لیست قیمت خودروهای {text} 🚗</h3>
@@ -1031,6 +1031,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
