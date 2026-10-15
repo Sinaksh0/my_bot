@@ -260,7 +260,7 @@ class Arz:
             </ul>
 
             <tg-button-row>
-                <tg-button type="url" style="success" url="https://t.me/SI_KSH">Admin</tg-button>
+                <tg-button type="url" style="success" url="https://t.me/SI_KSH">Bot Admin</tg-button>
             </tg-button-row>
         """
 
@@ -627,7 +627,7 @@ class Arz:
         
         return html
 
-    async def send_rich_message(self, chat_id, html_content):
+    async def send_rich_message(self, chat_id, html_content: str):
         """ارسال پیام با فرمت sendRichMessage"""
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendRichMessage"
         payload = {
@@ -661,26 +661,36 @@ class Arz:
                 sent = await update.message.reply_text('⏳ در حال دریافت قیمت‌ها...')
                 data = await self.get_arz(MAIN_API)
                 data = data['currency_prices']['items']
+                dollar = data[0]
+                eurro = data[1]
+                canada = data[6]
+                derham = data[2]
+                lir = data[3]
+                pond = data[4]
+                dinar = data[9]
+                oman = data[15]
+                arab = data[19]
+
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
-                await sent.delete()
-
-                indexs = [0, 1, 6, 2, 3, 4, 9, 15, 19]
-                message = ""
-
-                for idx in indexs:
-                    item = data[idx]
-                    message += f"<tr><td>{item['name_persian']}</td><td>{int(item['sell_price']['value']):,}</td></tr>"
 
                 html = f"""
                 <h3>💱 جدول قیمت ارزها</h3>
                 <p><mark>آخرین به‌روزرسانی: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered striped compact>
-                <tr><th>ارز</th><th>قیمت فروش</th></tr>
-                {message}
+                <tr><th>نماد</th><th>نام ارز</th><th>قیمت فروش</th></tr>
+                <tr><td>🇺🇸</td><td>دلار آمریکا</td><td>{int(dollar['sell_price']['value']):,}</td></tr>
+                <tr><td>🇪🇺</td><td>یورو اروپا</td><td>{int(eurro['sell_price']['value']):,}</td></tr>
+                <tr><td>🇨🇦</td><td>دلار کانادا</td><td>{int(canada['sell_price']['value']):,}</td></tr>
+                <tr><td>🇦🇪</td><td>درهم امارات</td><td>{int(derham['sell_price']['value']):,}</td></tr>
+                <tr><td>🇹🇷</td><td>لیر ترکیه</td><td>{int(lir['sell_price']['value']):,}</td></tr>
+                <tr><td>🇬🇧</td><td>پوند انگلیس</td><td>{int(pond['sell_price']['value']):,}</td></tr>
+                <tr><td>🇮🇶</td><td>صد دینار عراق</td><td>{int(dinar['sell_price']['value']):,}</td></tr>
+                <tr><td>🇴🇲</td><td>ریال عمان</td><td>{int(oman['sell_price']['value']):,}</td></tr>
+                <tr><td>🇸🇦</td><td>ریال عربستان</td><td>{int(arab['sell_price']['value']):,}</td></tr>
                 </table>
                 """
-
+                await sent.delete()
                 await self.send_rich_message(update.effective_chat.id, html)
                 return
             
@@ -735,7 +745,6 @@ class Arz:
                 min_rob = min(rob_data)
 
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
-                await sent.delete()
 
                 html = f"""
                 <h3>🪙 گزارش قیمت انواع سکه</h3>
@@ -749,7 +758,7 @@ class Arz:
                 <tr><td>🪙 ربع سکه</td><td>{int(rob['price']):,}</td><td>{max_rob:,}</td><td>{min_rob:,}</td><td>{int(rob['bubble']['amount']):,}</td></tr>
                 </table>
                 """
-
+                await sent.delete()
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
@@ -778,7 +787,6 @@ class Arz:
                 min_price = min(tala_data)
 
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
-                await sent.delete()
 
                 html = f"""
                 <h3>💰 قیمت طلا (18 عیار)</h3>
@@ -789,7 +797,7 @@ class Arz:
                 <tr><td>💰 طلای 18 عیار</td><td>{int(tala_18['price']):,}</td><td>{max_price:,}</td><td>{min_price:,}</td><td>{int(tala_18['bubble']['amount']):,}</td></tr>
                 </table>
                 """
-
+                await sent.delete()
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
@@ -853,7 +861,6 @@ class Arz:
                     await sent.edit_text('❌ اطلاعات خودروها فعلاً در دسترس نیست. کمی بعد دوباره تلاش کن.')
                     return
                 await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
-                await sent.delete()
 
                 message = ""
                 for item in data:
@@ -868,7 +875,7 @@ class Arz:
                 {message}
                 </table>
                 """
-
+                await sent.delete()
                 await self.send_rich_message(update.effective_chat.id, html)
                 return
 
@@ -903,7 +910,6 @@ class Arz:
                     await sent.edit_text('❌ اطلاعات خودروها فعلاً در دسترس نیست. کمی بعد دوباره تلاش کن.')
                     return
                 await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
-                await sent.delete()
 
                 message = ""
                 for item in data:
@@ -918,7 +924,7 @@ class Arz:
                 {message}
                 </table>
                 """
-
+                await sent.delete()
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 return
