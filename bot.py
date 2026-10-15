@@ -260,7 +260,7 @@ class Arz:
             </ul>
 
             <tg-button-row>
-                <tg-button type="url" style="success" url="https://t.me/SI_KSH">Bot Admin</tg-button>
+                <tg-button type="url" style="success" url="https://t.me/SI_KSH">Admin</tg-button>
             </tg-button-row>
         """
 
@@ -857,7 +857,7 @@ class Arz:
 
                 message = ""
                 for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']:,}</td></tr>"
+                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{int(item['disagreement_price']):,}</td></tr>"
 
                 html = f"""
                 <h3>🚗 لیست قیمت خودروهای {text} 🚗</h3>
@@ -907,7 +907,7 @@ class Arz:
 
                 message = ""
                 for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']:,}</td></tr>"
+                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{int(item['disagreement_price']):,}</td></tr>"
 
                 html = f"""
                 <h3>🚗 لیست قیمت خودروهای {text} 🚗</h3>
@@ -1016,9 +1016,7 @@ async def post_init(application):
     
 
 if __name__ == '__main__':
-    token = os.getenv('BOT_TOKEN')
-
-    application = ApplicationBuilder().token(token).build()
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
     application.post_init = post_init
 
     arz = Arz()
