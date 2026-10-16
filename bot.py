@@ -17,7 +17,7 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '2.0.1'
+VERSION = '2.0.2'
 
 class Arz:
     def __init__(self):
@@ -670,13 +670,21 @@ class Arz:
                 data = data['currency_prices']['items']
                 dollar = data[0]
                 eurro = data[1]
+                eur_rate = eurro["usd_rate"]["value"]
                 canada = data[6]
+                can_rate = canada["usd_rate"]["value"]
                 derham = data[2]
+                der_rate = derham["usd_rate"]["value"]
                 lir = data[3]
+                lir_rate = lir["usd_rate"]["value"]
                 pond = data[4]
+                pond_rate = pond["usd_rate"]["value"]
                 dinar = data[9]
+                dinar_rate = dinar["usd_rate"]["value"]
                 oman = data[15]
+                oman_rate = oman["usd_rate"]["value"]
                 arab = data[19]
+                arab_rate = arab["usd_rate"]["value"]
 
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
@@ -685,16 +693,16 @@ class Arz:
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered striped compact>
-                    <tr><th>نماد</th><th>💱 ارز</th><th>💵 نرخ فروش</th></tr>
-                    <tr><td>🇺🇸</td><td>دلار آمریکا</td><td>{int(dollar['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇪🇺</td><td>یورو اروپا</td><td>{int(eurro['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇨🇦</td><td>دلار کانادا</td><td>{int(canada['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇦🇪</td><td>درهم امارات</td><td>{int(derham['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇹🇷</td><td>لیر ترکیه</td><td>{int(lir['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇬🇧</td><td>پوند انگلیس</td><td>{int(pond['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇮🇶</td><td>صد دینار عراق</td><td>{int(dinar['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇴🇲</td><td>ریال عمان</td><td>{int(oman['sell_price']['value']):,}</td></tr>
-                    <tr><td>🇸🇦</td><td>ریال عربستان</td><td>{int(arab['sell_price']['value']):,}</td></tr>
+                    <tr><th>نماد</th><th>💱 ارز</th><th>\U0001f4b0 نرخ فروش</th><th>💵 نسبت به دلار</tr>
+                    <tr><td>🇺🇸</td><td>دلار آمریکا</td><td>{int(dollar['sell_price']['value']):,}</td><td>---</td></tr>
+                    <tr><td>🇪🇺</td><td>یورو اروپا</td><td>{int(eurro['sell_price']['value']):,}</td><td>{eur_rate}</td></tr>
+                    <tr><td>🇨🇦</td><td>دلار کانادا</td><td>{int(canada['sell_price']['value']):,}</td><td>{can_rate}</td></tr>
+                    <tr><td>🇦🇪</td><td>درهم امارات</td><td>{int(derham['sell_price']['value']):,}</td><td>{der_rate}</td></tr>
+                    <tr><td>🇹🇷</td><td>لیر ترکیه</td><td>{int(lir['sell_price']['value']):,}</td><td>{lir_rate}</td></tr>
+                    <tr><td>🇬🇧</td><td>پوند انگلیس</td><td>{int(pond['sell_price']['value']):,}</td><td>{pond_rate}</td></tr>
+                    <tr><td>🇮🇶</td><td>صد دینار عراق</td><td>{int(dinar['sell_price']['value']):,}</td><td>{dinar_rate}</td></tr>
+                    <tr><td>🇴🇲</td><td>ریال عمان</td><td>{int(oman['sell_price']['value']):,}</td><td>{oman_rate}</td></tr>
+                    <tr><td>🇸🇦</td><td>ریال عربستان</td><td>{int(arab['sell_price']['value']):,}</td><td>{arab_rate}</td></tr>
                 </table>
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
