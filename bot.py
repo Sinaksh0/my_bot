@@ -17,7 +17,7 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '2.0.2'
+VERSION = '2.0.3'
 
 class Arz:
     def __init__(self):
@@ -243,6 +243,8 @@ class Arz:
 
         self.check_user(name, chat_id)
 
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
                 message_id=update.message.message_id,
                 reaction=['\U0001f60d']
@@ -260,15 +262,11 @@ class Arz:
             </ul>
 
             <tg-button-row>
-                <tg-button type="url" style="success" url="https://t.me/SI_KSH">پشتیبانی ربات ↗</tg-button>
+                <tg-button type="url" style="success" url="https://t.me/SI_KSH">پشتیبانی ربات</tg-button>
             </tg-button-row>
         """
 
-        await self.send_rich_message(chat_id, html)
-        await update.message.reply_text("👇 یکی از گزینه‌های منو رو انتخاب کن تا شروع کنیم.",
-            reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-            )
-        
+        await self.send_rich_message(chat_id, html, reply_markup)
         return
 
     async def update(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -288,6 +286,8 @@ class Arz:
 
         self.check_user(name, chat_id)
 
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
         await self.reaction(update, context)
 
         html = f"""
@@ -298,15 +298,13 @@ class Arz:
             <li>📊 نمایش جدولی قیمت‌ها برای مقایسه‌ی راحت‌تر</li>
             <li>🗓️ دیدن ساعت‌های گزارش فعال با /myschedule</li>
         </ul>
-        
+
         <ul>
             <li><input type="checkbox" checked><strong>تغییرات جدید با موفقیت انجام شد</strong></li>
         </ul>
         """
 
-        await self.send_rich_message(chat_id, html)
-        await update.message.reply_text('<b>✅ تغییرات نسخه‌ی جدید رو در پیام بالا ببین.</b>', 
-            parse_mode='HTML', reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True))
+        await self.send_rich_message(chat_id, html, reply_markup)
         return
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -479,9 +477,6 @@ class Arz:
         await self.reaction(update, context)
 
         text = update.message.text.strip() if update.message.text else ''
-        if not text.startswith('/manager'):
-            await update.message.reply_text('⚠️ قالب دستور درست نیست. یکی از این نمونه‌ها رو بفرست:\n/manager all سلام\n/manager 123456789 سلام')
-            return
 
         rest = text[len('/manager'):].strip()
         if not rest:
@@ -504,31 +499,29 @@ class Arz:
                 if chat_id is None:
                     continue
                 try:
-                    await context.bot.send_message(chat_id=chat_id, text=msg)
+                    await context.bot.send_message(chat_id=chat_id, text=f'📨 پیام از مدیر برای شما\n\n{msg}')
                     sent += 1
                 except Exception:
                     failed += 1
             await update.message.reply_text(f'📨 ارسال همگانی انجام شد؛ {sent} پیام موفق بود.' + (f' ⚠️ {failed} پیام ارسال نشد.' if failed else ' ✅'))
             return
 
-        if target.isdigit() or (target.startswith('-') and target[1:].isdigit()):
+        elif target.isdigit() or (target.startswith('-') and target[1:].isdigit()):
             try:
                 chat_id = int(target)
-                await context.bot.send_message(chat_id=chat_id, text=msg)
+                await context.bot.send_message(chat_id=chat_id, text=f'📨 پیام از مدیر برای شما\n\n{msg}')
                 await update.message.reply_text(f'✅ پیام با موفقیت به آیدی {chat_id} رسید.')
             except Exception as exc:
                 await update.message.reply_text(f'❌ ارسال پیام به آیدی {target} ناموفق بود.\nجزئیات: {exc}')
             return
-
-        await update.message.reply_text('⚠️ گیرنده رو با «all» یا یک آیدی عددی مشخص کن.\nنمونه: /manager all سلام')
+        
+        else:
+            await update.message.reply_text('⚠️ گیرنده رو با «all» یا یک آیدی عددی مشخص کن.\nنمونه: /manager all سلام')
 
     async def send_to_manager(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.reaction(update, context)
         
         text = update.message.text
-        if '/send' not in text:
-            await update.message.reply_text('⚠️ برای پیام به مدیر، متن رو با /send شروع کن.\nنمونه: /send سلام، یک پیام دارم.')
-            return 
 
         if text == '/send':
             await update.message.reply_text('✍️ متن پیامت رو بعد از /send بنویس.\nنمونه: /send سلام، یک پیام دارم.')
@@ -622,7 +615,7 @@ class Arz:
             <tr><td>🛢️ {oil['name']}</td><td>{oil['price']} دلار</td><td>---</td><td>---</td><td>---</td></tr>
         </table>
         <tg-button-row>
-            <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+            <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
         </tg-button-row>
         """
 
@@ -635,17 +628,21 @@ class Arz:
         
         return html
 
-    async def send_rich_message(self, chat_id: int, html_content: str):
+    async def send_rich_message(self, chat_id: int, html_content: str, reply_markup=None):
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendRichMessage"
-        payload = {
+        body = {
             "chat_id": chat_id,
             "rich_message": {
                 "html": html_content.strip(),
                 "is_rtl": True
             }
         }
+
+        if reply_markup:
+            body['reply_markup'] = reply_markup
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
+            async with session.post(url, json=body) as response:
                 return await response.json()
 
     async def reaction(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -705,7 +702,7 @@ class Arz:
                     <tr><td>🇸🇦</td><td>ریال عربستان</td><td>{int(arab['sell_price']['value']):,}</td><td>{arab_rate}</td></tr>
                 </table>
                 <tg-button-row>
-                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
                 """
                 await sent.delete()
@@ -765,7 +762,7 @@ class Arz:
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
                 html = f"""
-                <h3>🪙 بازار سکه</h3>
+                <h2>🪙 بازار سکه</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered striped compact>
@@ -776,7 +773,7 @@ class Arz:
                     <tr><td>🪙 ربع سکه</td><td>{int(rob['price']):,}</td><td>{max_rob:,}</td><td>{min_rob:,}</td><td>{int(rob['bubble']['amount']):,}</td></tr>
                 </table>
                 <tg-button-row>
-                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
                 """
                 await sent.delete()
@@ -810,7 +807,7 @@ class Arz:
                 await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
                 html = f"""
-                <h3>💰 بازار طلای ۱۸ عیار</h3>
+                <h2>💰 بازار طلای ۱۸ عیار</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered compact>
@@ -818,7 +815,7 @@ class Arz:
                     <tr><td>💰 طلای 18 عیار</td><td>{int(tala_18['price']):,}</td><td>{max_price:,}</td><td>{min_price:,}</td><td>{int(tala_18['bubble']['amount']):,}</td></tr>
                 </table>
                 <tg-button-row>
-                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
                 """
                 await sent.delete()
@@ -891,7 +888,7 @@ class Arz:
                     message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
                 html = f"""
-                <h3>🚗 قیمت روز خودروهای {text}</h3>
+                <h2>🚗 قیمت روز خودروهای {text}</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered striped compact>
@@ -899,7 +896,7 @@ class Arz:
                     {message}
                 </table>
                 <tg-button-row>
-                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
                 """
                 await sent.delete()
@@ -943,7 +940,7 @@ class Arz:
                     message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
                 html = f"""
-                <h3>🚗 قیمت روز خودروهای {text}</h3>
+                <h2>🚗 قیمت روز خودروهای {text}</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered striped compact>
@@ -951,7 +948,7 @@ class Arz:
                     {message}
                 </table>
                 <tg-button-row>
-                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات ↗</tg-button>
+                    <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
                 """
                 await sent.delete()
