@@ -639,7 +639,7 @@ class Arz:
         }
 
         if reply_markup:
-            body['reply_markup'] = reply_markup
+            body['reply_markup'] = reply_markup.to_dict()
 
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=body) as response:
