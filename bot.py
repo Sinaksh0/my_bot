@@ -491,7 +491,7 @@ class Arz:
             message += '📋 فهرست کاربران\n\n'
             for i, user in enumerate(data, start=1):
                 message += (
-                    f'{i}. {user['Name']} - {user['ID']}\n\n'
+                    f'{i}. {user['Name']} (->) {user['ID']}\n\n'
                 )
             await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
 
