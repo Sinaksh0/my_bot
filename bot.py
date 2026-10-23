@@ -300,9 +300,9 @@ class Arz:
 
         <p>با دستور جدید میتوان ست کرد که هر چند ثانیه گزارش ارسال شود.
         مثلا /repeat 60، یعنی هر 60 ثانیه گزارش ارسال خواهد شد.
-        بعد از دستور /repeat حتما عددی به به صورت ثانیه وارد کنید.</p>
+        بعد از دستور /repeat حتما عددی به صورت ثانیه وارد کنید.</p>
 
-        <p>مثلا برای اینکه هر 15 دقیق ارسال شود، دستور /repeat 900 را وارد کنید.</p>
+        <p>مثلا برای اینکه هر 15 دقیقه ارسال شود، دستور /repeat 900 را وارد کنید.</p>
 
 
         <ul>
@@ -1095,6 +1095,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
