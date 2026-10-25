@@ -17,7 +17,7 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '2.1.0'
+VERSION = '2.1.2'
 
 class Arz:
     def __init__(self):
@@ -96,21 +96,21 @@ class Arz:
         result = json.loads(response)
         return result
     
-    def upload_price(self, prices):
-        url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/prices.json'
+    def upload_data(self, data, method: str):
+        url = f'https://api.github.com/repos/Sinaksh0/warp-config/contents/{method}.json'
 
         headers = {
             'Authorization': f'Bearer {GIT}',
             'Accept': 'application/vnd.github+json'
         }
 
-        data = json.dumps(prices, ensure_ascii=False).encode()
+        data = json.dumps(data, ensure_ascii=False).encode()
         encoded = base64.b64encode(data).decode('utf-8')
 
         response = requests.get(url, headers=headers, timeout=20)
 
         body = {
-            'message': 'Auto updating prices',
+            'message': f'Auto updating {method}',
             'content': encoded,
             'branch': 'main'
         }
@@ -149,31 +149,6 @@ class Arz:
 
         if resp.status_code == 200:
             body["sha"] = resp.json().get("sha")
-
-        requests.put(url, headers=headers, json=body, timeout=20)
-        return
-
-    def upload_hours(self, hours):
-        url = 'https://api.github.com/repos/Sinaksh0/warp-config/contents/hours.json'
-
-        headers = {
-            'Authorization': f'Bearer {GIT}',
-            'Accept': 'application/vnd.github+json'
-        }
-
-        data = json.dumps(hours, ensure_ascii=False).encode()
-        encoded = base64.b64encode(data).decode('utf-8')
-
-        response = requests.get(url, headers=headers, timeout=20)
-
-        body = {
-            'message': 'Auto updating hours',
-            'content': encoded,
-            'branch': 'main'
-        }
-
-        if response.status_code == 200:
-            body['sha'] = response.json().get('sha')
 
         requests.put(url, headers=headers, json=body, timeout=20)
         return
@@ -298,13 +273,6 @@ class Arz:
             <li>⏱️ امکان تنظیم زمان‌بندی دلخواه ارسال گزارش‌ها با دستور /repeat</li>
         </ul>
 
-        <p>با دستور جدید میتوان ست کرد که هر چند ثانیه گزارش ارسال شود.
-        مثلا /repeat 60، یعنی هر 60 ثانیه گزارش ارسال خواهد شد.
-        بعد از دستور /repeat حتما عددی به صورت ثانیه وارد کنید.</p>
-
-        <p>مثلا برای اینکه هر 15 دقیقه ارسال شود، دستور /repeat 900 را وارد کنید.</p>
-
-
         <ul>
             <li><input type="checkbox" checked><strong>تغییرات جدید با موفقیت انجام شد</strong></li>
         </ul>
@@ -392,7 +360,7 @@ class Arz:
                 'job_name': job_name
             })
 
-        self.upload_hours(set_hour)
+        self.upload_data(set_hour, 'hours')
         await update.message.reply_text(f'✅ گزارش خودکار با این ساعت‌ها تنظیم شد: {times}')
         return
 
@@ -433,33 +401,10 @@ class Arz:
                 set_hour.remove(user)
                 break
 
-        self.upload_hours(set_hour)
+        self.upload_data(set_hour, 'hours')
         await update.message.reply_text('⏸️ ارسال خودکار گزارش برای این گفتگو متوقف شد.')
         return
 
-    async def send_repeating(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if not context.args:
-            await update.message.reply_text('ثانیه هم وارد کنید. مانند:\n/repeat 1800')
-            return
-            
-        if len(context.args) > 1:
-            await update.message.reply_text('⚠️ فقط یک عدد به عنوان زمان وارد کنید!')
-            return
-
-        try:
-            second = int(context.args[0])
-        except ValueError:
-            await update.message.reply_text('⚠️ لطفاً یک عدد معتبر وارد کنید!')
-            return
-
-        if second < 60:
-            second *= 60
-
-        chat_id = update.effective_chat.id
-        context.job_queue.run_repeating(self.send_daily, interval=second, chat_id=chat_id)
-        await update.message.reply_text(f'⏱️ از این پس هر {second} ثانیه گزارش ارسال خواهد شد.')
-        return
-        
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
             return
@@ -491,7 +436,7 @@ class Arz:
             message += '📋 فهرست کاربران\n\n'
             for i, user in enumerate(data, start=1):
                 message += (
-                    f'{i}. {user['Name']} (->) {user['ID']}\n\n'
+                    f'{i}. {user['Name']} - {user['ID']}\n\n'
                 )
             await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -649,7 +594,7 @@ class Arz:
         """
 
         if flag:
-            self.upload_price(self.data)
+            self.upload_data(self.data, 'prices')
 
         if context.job is not None:
             await self.send_rich_message(context.job.chat_id, html)
@@ -809,7 +754,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    self.upload_price(self.data)
+                    self.upload_data(self.data, 'prices')
                 return
             
             elif text == '💰 قیمت طلا 💰':
@@ -851,7 +796,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    self.upload_price(self.data)
+                    self.upload_data(self.data, 'prices')
                 return
             
             elif text == '💱 خلاصه قیمت ها 🪙':
@@ -1072,7 +1017,6 @@ async def post_init(application):
         BotCommand('set', '⏰ تنظیم ساعت گزارش قیمت'),
         BotCommand('myschedule', '🗓️ دیدن ساعت‌های فعال'),
         BotCommand('unset', '⏸️ توقف گزارش زمان‌بندی‌شده'),
-        BotCommand("repeat", "⏱️ تنظیم زمان‌بندی ثانیه ای گزارش قیمت"),
         BotCommand('send', '📨 ارسال پیام به مدیر'),
         BotCommand('help', '📋 راهنمای دستورها')
     ])
@@ -1090,7 +1034,6 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("set", arz.set_hours))
     application.add_handler(CommandHandler("myschedule", arz.myschedule))
     application.add_handler(CommandHandler("unset", arz.unset_hours))
-    application.add_handler(CommandHandler("repeat", arz.send_repeating))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
