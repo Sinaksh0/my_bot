@@ -188,7 +188,7 @@ class Arz:
             try:
                 await context.bot.send_message(
                     chat_id=user['ID'],
-                    text=f'✨ نسخه‌ی جدید v{VERSION} منتشر شد.\n\n'
+                    text=f'✨ آپدیت تجمعی نسخه‌ی جدید v{VERSION} منتشر شد.\n\n'
                         '🔄 برای دریافت آخرین تغییرات، دستور زیر را بفرستید:\n'
                         '/update'
                 )
@@ -539,7 +539,7 @@ class Arz:
                     title='\U0001f4b8 قیمت تتر',
                     description='مشاهده نرخ لحظه‌ای تتر',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>\U0001f4b8 قیمت تتر:</b> {int(tether):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>\U0001f4b8 قیمت تتر:</b> {int(tether):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -549,10 +549,10 @@ class Arz:
             result.append(
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
-                    title='\U0001f4b5 قیمت تتر',
+                    title='\U0001f4b5 قیمت دلار',
                     description='مشاهده نرخ لحظه‌ای دلار',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>\U0001f4b5 قیمت دلار:</b> {int(dollar):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>\U0001f4b5 قیمت دلار:</b> {int(dollar):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -565,7 +565,7 @@ class Arz:
                     title='💷 قیمت یورو',
                     description='مشاهده نرخ لحظه‌ای یورو',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>💷 قیمت یورو:</b> {int(eurro):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>💷 قیمت یورو:</b> {int(eurro):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -575,10 +575,10 @@ class Arz:
             result.append(
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
-                    title='\U0001f4b8 قیمت سکه امامی',
+                    title='🪙 قیمت سکه امامی',
                     description='مشاهده نرخ لحظه‌ای سکه امامی',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>\U0001f4b8 قیمت سکه امامی:</b> {int(seke_emami):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>🪙 قیمت سکه امامی:</b> {int(seke_emami):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -591,7 +591,7 @@ class Arz:
                     title='🪙 قیمت سکه بهار آزادی',
                     description='مشاهده نرخ لحظه‌ای سکه بهار آزادی',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>🪙 قیمت تتر:</b> {int(azadi):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>🪙 قیمت تتر:</b> {int(azadi):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -604,7 +604,7 @@ class Arz:
                     title='🪙 قیمت نیم سکه',
                     description='مشاهده نرخ لحظه‌ای نیم سکه',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>🪙 قیمت نیم سکه:</b> {int(nim):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>🪙 قیمت نیم سکه:</b> {int(nim):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -617,7 +617,7 @@ class Arz:
                     title='🪙 قیمت ربع سکه',
                     description='مشاهده نرخ لحظه‌ای ربع سکه',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>🪙 قیمت ربع سکه:</b> {int(rob):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>🪙 قیمت ربع سکه:</b> {int(rob):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -630,7 +630,7 @@ class Arz:
                     title='💰 قیمت طلای 18 عیار',
                     description='مشاهده نرخ لحظه‌ای طلای 18 عیار',
                     input_message_content=InputTextMessageContent(
-                        message_text=f'<b>💰 قیمت طلای 18 عیار:</b> {int(tala_18):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        message_text=f'<b>💰 قیمت طلای 18 عیار:</b> {int(tala_18):,} تومان\n\n🕒 <b>زمان ثبت درخواست</b>: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
                         parse_mode='HTML'
                     )
                 )
@@ -1172,6 +1172,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    #application.job_queue.run_once(arz.check_update, when=5)
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
