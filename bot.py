@@ -4,11 +4,12 @@ import json
 import base64
 import re
 import aiohttp
+import uuid
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, filters
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, BotCommand
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, InlineQueryHandler, filters
 
 MAIN_API = os.getenv('Main_API')
 CAR_API = os.getenv('Car_API')
@@ -17,7 +18,7 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '2.1.2'
+VERSION = '3.0.0'
 
 class Arz:
     def __init__(self):
@@ -266,12 +267,22 @@ class Arz:
         await self.reaction(update, context)
 
         html = f"""
-        <h1>نسخه v{VERSION} ✨</h1>
+        <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
-        <h3>✨ تغییرات این نسخه</h3>
+        <h2>✨ تغییرات این نسخه</h2>
+        <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
+
+        <h3>✨ چطوری ازش استفاده کنیم؟</h3>
+        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
+
         <ul>
-            <li>⏱️ امکان تنظیم زمان‌بندی دلخواه ارسال گزارش‌ها با دستور /repeat</li>
+            <li>@arzpricekshbot تتر</li>
+            <li>@arzpricekshbot دلار</li>
+            <li>@arzpricekshbot طلا 18 عیار</li>
         </ul>
+
+        <p>همون لحظه یک منو کشویی باز می‌شود که میتوانید با یک کلیک، قیمت لحظه‌ای را بفرستید وسط چت تا همه دوستانتان ببینند!😎</p>
+
 
         <ul>
             <li><input type="checkbox" checked><strong>تغییرات جدید با موفقیت انجام شد</strong></li>
@@ -504,6 +515,128 @@ class Arz:
         msg = text.replace('/send', '')
         await context.bot.send_message(chat_id=ADMIN_ID, text=f'📨 پیام از {update.effective_user.full_name} ({update.effective_user.id}):\n\n{msg}')
         await update.message.reply_text('✅ پیامت برای مدیر فرستاده شد.')
+
+    async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.inline_query.query.strip().lower()
+
+        data = await self.get_arz(MAIN_API)
+
+        tether = data['crypto_prices']['items'][0]['price_toman']
+        dollar = data['currency_prices']['items'][0]['sell_price']['value']
+        eurro = data['currency_prices']['items'][1]['sell_price']['value']
+        seke_emami = data['gold_prices']['items'][2]['price']
+        azadi = data['gold_prices']['items'][3]['price']
+        nim = data['gold_prices']['items'][4]['price']
+        rob = data['gold_prices']['items'][5]['price']
+        tala_18 = data['gold_prices']['items'][1]['price']
+
+        result = []
+
+        if query in ['tether', 'تتر']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='\U0001f4b8 قیمت تتر',
+                    description='مشاهده نرخ لحظه‌ای تتر',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>\U0001f4b8 قیمت تتر:</b> {int(tether):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['دلار', 'usd', 'dollar', 'dolar']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='\U0001f4b5 قیمت تتر',
+                    description='مشاهده نرخ لحظه‌ای دلار',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>\U0001f4b5 قیمت دلار:</b> {int(dollar):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['یورو', 'eurro', 'eur']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='💷 قیمت یورو',
+                    description='مشاهده نرخ لحظه‌ای یورو',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>💷 قیمت یورو:</b> {int(eurro):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['سکه', 'سکه امامی', 'امامی']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='\U0001f4b8 قیمت سکه امامی',
+                    description='مشاهده نرخ لحظه‌ای سکه امامی',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>\U0001f4b8 قیمت سکه امامی:</b> {int(seke_emami):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['سکه', 'سکه بهار آزادی', 'سکه بهار ازادی', 'بهار ازادی', 'بهار آزادی']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='🪙 قیمت سکه بهار آزادی',
+                    description='مشاهده نرخ لحظه‌ای سکه بهار آزادی',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>🪙 قیمت تتر:</b> {int(azadi):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['سکه', 'نیم', 'نیم سکه']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='🪙 قیمت نیم سکه',
+                    description='مشاهده نرخ لحظه‌ای نیم سکه',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>🪙 قیمت نیم سکه:</b> {int(nim):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['سکه', 'ربع', 'ربع سکه']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='🪙 قیمت ربع سکه',
+                    description='مشاهده نرخ لحظه‌ای ربع سکه',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>🪙 قیمت ربع سکه:</b> {int(rob):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        if query in ['طلا', 'طلای 18 عیار', 'طلا 18 عیار', 'گرم طلا', 'gold']:
+            result.append(
+                InlineQueryResultArticle(
+                    id=str(uuid.uuid4()),
+                    title='💰 قیمت طلای 18 عیار',
+                    description='مشاهده نرخ لحظه‌ای طلای 18 عیار',
+                    input_message_content=InputTextMessageContent(
+                        message_text=f'<b>💰 قیمت طلای 18 عیار:</b> {int(tala_18):,} تومان\n\n🕒 زمان ثبت درخواست: {datetime.now(self.tehran).strftime('%H:%M:%S')}',
+                        parse_mode='HTML'
+                    )
+                )
+            )
+
+        await update.inline_query.answer(result, cache_time=5)
 
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
         self.data = self.load_price()
@@ -1035,6 +1168,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("myschedule", arz.myschedule))
     application.add_handler(CommandHandler("unset", arz.unset_hours))
     application.add_handler(CommandHandler("help", arz.help))
+    application.add_handler(InlineQueryHandler(arz.inline_query_handler))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
