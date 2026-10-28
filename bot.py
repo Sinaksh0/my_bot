@@ -273,7 +273,7 @@ class Arz:
         <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
 
         <h3>✨ چطوری ازش استفاده کنیم؟</h3>
-        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
+        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت های شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
 
         <ul>
             <li>@arzpricekshbot تتر</li>
@@ -1172,6 +1172,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
