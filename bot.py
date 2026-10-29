@@ -1,4 +1,3 @@
-import asyncio
 import requests
 import os
 import json
@@ -175,11 +174,11 @@ class Arz:
         return
     
     async def get_arz(self, url):
-        response = await asyncio.to_thread(requests.get, url, timeout=10)
+        response = requests.get(url, timeout=10)
         return response.json()
 
     async def get_car(self, url):
-        response = await asyncio.to_thread(requests.get, url, timeout=10)
+        response = requests.get(url, timeout=10)
         return response.json()['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
@@ -640,7 +639,7 @@ class Arz:
         await update.inline_query.answer(result, cache_time=5)
 
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
-        self.data = await asyncio.to_thread(self.load_price)
+        self.data = self.load_price
         data = await self.get_arz(MAIN_API)
         oil = await self.get_arz(OIL)
 
@@ -728,7 +727,7 @@ class Arz:
         """
 
         if flag:
-            await asyncio.to_thread(self.upload_data, self.data, 'prices')
+            self.upload_data(self.data, 'prices')
 
         if context.job is not None:
             await self.send_rich_message(context.job.chat_id, html)
@@ -762,7 +761,7 @@ class Arz:
     
     async def take_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
-        self.data = await asyncio.to_thread(self.load_price)
+        self.data = self.load_price
 
         if text is None:
             return
@@ -888,7 +887,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    await asyncio.to_thread(self.upload_data, self.data, 'prices')
+                    self.upload_data(self.data, 'prices')
                 return
             
             elif text == '💰 قیمت طلا 💰':
@@ -930,7 +929,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    await asyncio.to_thread(self.upload_data, self.data, 'prices')
+                    self.upload_data(self.data, 'prices')
                 return
             
             elif text == '💱 خلاصه قیمت ها 🪙':
@@ -1155,37 +1154,38 @@ class Arz:
                 {prices}
 
                 نام کاربر: {update.effective_user.full_name}
-                سوال یا متن کاربر این است: "{user_text}"
+                سوال کاربر این است: "{user_text}"
                 
+                لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
                 
-                ⚠️ قوانین مهم:
+                ⚠️ قوانین مهم نگارشی:
                 1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
                 2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
                 3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
                 4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
             """
+
             try:
-                stream_gen = await self.client.aio.models.generate_content_stream(
-                    model='gemini-3.8-flash',
+                result = await self.client.aio.models.generate_content(
+                    model='gemini-3.1-pro-preview',
                     contents=full_prompt
                 )
+                        
 
-                result = ""
-                async for chunk in stream_gen:
-                    if chunk.text:
-                        result += chunk.text
-
-                    try:
-                        await send_message.edit_text(result + " ✍️", parse_mode="HTML")
-                    except Exception:
-                        pass
-
-                await send_message.edit_text(result, parse_mode="HTML")
+                await update.message.reply_text(result, parse_mode="HTML")
                 return
             
             except Exception as e:
                 if "503" in str(e) or "UNAVAILABLE" in str(e):
                     await send_message.edit_text("⚠️ سرور هوش مصنوعی در حال حاضر شلوغ است. لطفاً چند لحظه دیگر دوباره تلاش کن.")
+                elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                    await send_message.edit_text("⚠️ تعداد درخواست‌ها زیاد است. لطفاً چند ثانیه صبر کن و دوباره پیام بده.")
+                    await context.bot.send_message(
+                        ADMIN_ID, 
+                        f'🚨 هشدار: سهمیه API گوگل تمام شد یا به محدودیت (429) خورد!\nکاربر: {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}'
+                    )
+                    return
+                
                 else:
                     await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                 await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}')
