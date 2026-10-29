@@ -1163,10 +1163,16 @@ class Arz:
             """
 
             try:
-                result = await self.client.aio.models.generate_content(
-                    model='gemini-3.8-flash',
-                    contents=full_prompt
-                )
+                import asyncio
+            
+                def call_gemini():
+                    return self.client.models.generate_content(
+                        model='gemini-3.8-flash',
+                        contents=full_prompt
+                    )
+                    
+                result = await asyncio.to_thread(call_gemini)
+                
                 await send_message.delete()
                 await update.message.reply_text(result.text, parse_mode="HTML")
                 return
