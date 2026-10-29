@@ -191,9 +191,11 @@ class Arz:
             try:
                 await context.bot.send_message(
                     chat_id=user['ID'],
-                    text=f'✨ آپدیت تجمعی نسخه‌ی جدید v{VERSION} منتشر شد.\n\n'
+                    text=f'✨ آپدیت تجمعی نسخه‌ی جدید v{VERSION} منتشر شد.\n'
+                        'دستیار هوشمند و قدرتمند <b>Google Gemini</b> به ربات اضافه شد! 🚀\n\n'
                         '🔄 برای دریافت آخرین تغییرات، دستور زیر را بفرستید:\n'
-                        '/update'
+                        '/update',
+                    parse_mode='HTML'
                 )
                 new_users.append(user)
 
@@ -273,18 +275,13 @@ class Arz:
         <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
         <h2>✨ تغییرات این نسخه</h2>
-        <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
+        <p>دستیار هوشمند و قدرتمند <b>Google Gemini</b> به ربات اضافه شد! 🚀
 
-        <h3>✨ چطوری ازش استفاده کنیم؟</h3>
-        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
+        از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک <b>مشاور و تحلیلگر هوشمند</b> تبدیل شده است.
 
-        <ul>
-            <li>@arzpricekshbot تتر</li>
-            <li>@arzpricekshbot دلار</li>
-            <li>@arzpricekshbot طلا 18 عیار</li>
-        </ul>
+        💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده!
 
-        <p>همون لحظه یک منو کشویی باز می‌شود که میتوانید با یک کلیک، قیمت لحظه‌ای را بفرستید وسط چت تا همه دوستانتان ببینند!😎</p>
+        همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
 
 
         <ul>
@@ -1152,13 +1149,13 @@ class Arz:
             )
 
             full_prompt = f"""
-                تو یک مشاور مالی هوشمند هستی. 
+                تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
                 {prices}
-                
+
+                نام کاربر: {update.effective_user.full_name}
                 سوال کاربر این است: "{user_text}"
                 
                 لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
-                اگر هم کاربر شروع کرد به چت کردن باهات، محترمانه جواب بده و بحث رو ببر سمت قیمت ها و تحلیل آن ها.
             """
 
             try:
@@ -1166,8 +1163,8 @@ class Arz:
                     model='gemini-3.8-flash',
                     contents=full_prompt
                 )
-
-                await send_message.edit_text(result.text)
+                await send_message.delete()
+                await update.message.reply_text(result.text)
                 return
             
             except Exception as e:
@@ -1235,6 +1232,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    #application.job_queue.run_once(arz.check_update, when=5)
+    application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
