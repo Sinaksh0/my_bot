@@ -1172,7 +1172,7 @@ class Arz:
             
             except Exception as e:
                 print(f'Gen AI Error: {e}')
-                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                await send_message.edit_text(f"متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.\n{e}")
                 return
             
         except requests.exceptions.RequestException:
