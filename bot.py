@@ -1156,15 +1156,19 @@ class Arz:
                 سوال کاربر این است: "{user_text}"
                 
                 لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
+                
+                ⚠️ قوانین مهم نگارشی:
+                1. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
+                2. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
             """
 
             try:
-                result = self.client.models.generate_content(
+                result = await self.client.models.generate_content(
                     model='gemini-3.8-flash',
                     contents=full_prompt
                 )
                 await send_message.delete()
-                await update.message.reply_text(result.text)
+                await update.message.reply_text(result.text, parse_mode="HTML")
                 return
             
             except Exception as e:
