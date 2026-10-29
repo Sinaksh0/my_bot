@@ -1077,15 +1077,13 @@ class Arz:
             return
 
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.reaction(update, context)
         user_text = update.message.text
 
         try:
             data = await self.get_arz(MAIN_API)
-            internal_car = await self.get_car(f'{CAR_API}/dakheli')
-            external_car = await self.get_car(f'{CAR_API}/varedati')
 
             if re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', user_text):
-                await self.reaction(update, context)
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
@@ -1101,7 +1099,6 @@ class Arz:
                 return
                 
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', user_text):
-                await self.reaction(update, context)
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
@@ -1117,7 +1114,6 @@ class Arz:
                 return
 
             elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:گرم(?:\s+طلا)?|طلا)\s*', user_text):
-                await self.reaction(update, context)
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
@@ -1153,8 +1149,6 @@ class Arz:
                 f"قیمت نیم سکه: {int(nim):,}\n"
                 f"قیمت ربع سکه: {int(rob):,}\n"
                 f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
-                f"لیست نام و قیمت و اطلاعات خودرو های داخلی ایرانی: {internal_car}\n"
-                f"لیست نام و قیمت و اطلاعات خودرو های وارداتی که وارد ایران شده اند: {external_car}"
             )
 
             full_prompt = f"""
@@ -1169,14 +1163,15 @@ class Arz:
 
             try:
                 result = self.client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-1.5-flash',
                     contents=full_prompt
                 )
 
                 await send_message.edit_text(result.text)
                 return
             
-            except Exception:
+            except Exception as e:
+                print(f'Gen AI Error: {e}')
                 await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                 return
             
