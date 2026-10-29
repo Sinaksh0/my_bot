@@ -174,12 +174,12 @@ class Arz:
         return
     
     async def get_arz(self, url):
-        response = requests.get(url, timeout=10)
-        return response.json()
+        response = requests.get(url, timeout=10).json()
+        return response
 
     async def get_car(self, url):
-        response = requests.get(url, timeout=10)
-        return response.json()['cars']
+        response = requests.get(url, timeout=10).json()
+        return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
         users = self.load_state()
@@ -191,11 +191,9 @@ class Arz:
             try:
                 await context.bot.send_message(
                     chat_id=user['ID'],
-                    text=f'✨ آپدیت تجمعی نسخه‌ی جدید v{VERSION} منتشر شد.\n'
-                        'دستیار هوشمند و قدرتمند <b>Google Gemini</b> به ربات اضافه شد! 🚀\n\n'
+                    text=f'✨ آپدیت تجمعی نسخه‌ی جدید v{VERSION} منتشر شد.\n\n'
                         '🔄 برای دریافت آخرین تغییرات، دستور زیر را بفرستید:\n'
-                        '/update',
-                    parse_mode='HTML'
+                        '/update'
                 )
                 new_users.append(user)
 
@@ -275,13 +273,18 @@ class Arz:
         <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
         <h2>✨ تغییرات این نسخه</h2>
-        <p>دستیار هوشمند و قدرتمند <b>Google Gemini</b> به ربات اضافه شد! 🚀
+        <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
 
-        از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک <b>مشاور و تحلیلگر هوشمند</b> تبدیل شده است.
+        <h3>✨ چطوری ازش استفاده کنیم؟</h3>
+        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
 
-        💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده!
+        <ul>
+            <li>@arzpricekshbot تتر</li>
+            <li>@arzpricekshbot دلار</li>
+            <li>@arzpricekshbot طلا 18 عیار</li>
+        </ul>
 
-        همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
+        <p>همون لحظه یک منو کشویی باز می‌شود که میتوانید با یک کلیک، قیمت لحظه‌ای را بفرستید وسط چت تا همه دوستانتان ببینند!😎</p>
 
 
         <ul>
@@ -639,7 +642,7 @@ class Arz:
         await update.inline_query.answer(result, cache_time=5)
 
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
-        self.data = self.load_price
+        self.data = self.load_price()
         data = await self.get_arz(MAIN_API)
         oil = await self.get_arz(OIL)
 
@@ -761,7 +764,7 @@ class Arz:
     
     async def take_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
-        self.data = self.load_price
+        self.data = self.load_price()
 
         if text is None:
             return
@@ -1074,7 +1077,6 @@ class Arz:
             return
 
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await self.reaction(update, context)
         user_text = update.message.text
 
         try:
@@ -1249,7 +1251,7 @@ if __name__ == '__main__':
     application.add_handler(InlineQueryHandler(arz.inline_query_handler))
     application.add_handler(MessageHandler(filters.Regex(pattern), arz.take_price))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler, block=False))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
     #application.job_queue.run_once(arz.check_update, when=5)
 
