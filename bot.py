@@ -27,13 +27,7 @@ class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.fernet = Fernet(KEY)
-        self.client = genai.Client(
-            api_key=API_GEN,
-            http_options=genai.types.HttpOptions(
-                timeout=60_000,
-                retry_options=genai.types.HttpRetryOptions(attempts=1)
-            )
-        )
+        self.client = genai.Client(api_key=API_GEN)
         self.set = self.load_hours()
 
         self.keyboard = [
@@ -1171,12 +1165,18 @@ class Arz:
             """
 
             try:
-                result = await self.client.aio.models.generate_content(
+                stream_gen = await self.client.aio.models.generate_content_stream(
                     model='gemini-3.8-flash',
                     contents=full_prompt
                 )
+
+                result = ""
+                async for chunk in stream_gen:
+                    if chunk.text:
+                        result += chunk.text
+
                 await send_message.delete()
-                await update.message.reply_text(result.text, parse_mode="HTML")
+                await update.message.reply_text(result, parse_mode="HTML")
                 return
             
             except Exception as e:
