@@ -1164,7 +1164,6 @@ class Arz:
                 3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
                 4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
             """
-
             try:
                 stream_gen = await self.client.aio.models.generate_content_stream(
                     model='gemini-3.8-flash',
@@ -1176,8 +1175,12 @@ class Arz:
                     if chunk.text:
                         result += chunk.text
 
-                await send_message.delete()
-                await update.message.reply_text(result, parse_mode="HTML")
+                    try:
+                        await send_message.edit_text(result + " ✍️", parse_mode="HTML")
+                    except Exception:
+                        pass
+
+                await send_message.edit_text(result, parse_mode="HTML")
                 return
             
             except Exception as e:
