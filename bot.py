@@ -1168,7 +1168,10 @@ class Arz:
                 return
             
             except Exception as e:
-                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.❌")
+                if "503" in str(e) or "UNAVAILABLE" in str(e):
+                    await send_message.edit_text("⚠️ سرور هوش مصنوعی در حال حاضر شلوغ است. لطفاً چند لحظه دیگر دوباره تلاش کن.")
+                else:
+                    await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                 await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}')
                 return
             
@@ -1232,6 +1235,6 @@ if __name__ == '__main__':
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
-    application.job_queue.run_once(arz.check_update, when=5)
+    #application.job_queue.run_once(arz.check_update, when=5)
 
     application.run_polling()
