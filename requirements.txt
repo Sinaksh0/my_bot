@@ -4,3 +4,4 @@ python-telegram-bot[job-queue]
 requests
 aiohttp
 cryptography
+google-genai
