@@ -8,6 +8,7 @@ import uuid
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
+from google import genai
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, InlineQueryHandler, filters
 
@@ -18,12 +19,14 @@ ADMIN_ID = int(os.getenv('Admin_ID'))
 GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
-VERSION = '3.0.0'
+API_GEN = os.getenv('Gen_API')
+VERSION = '4.0.0'
 
 class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.fernet = Fernet(KEY)
+        self.client = genai.Client(api_key=API_GEN)
         self.set = self.load_hours()
 
         self.keyboard = [
@@ -273,7 +276,7 @@ class Arz:
         <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
 
         <h3>✨ چطوری ازش استفاده کنیم؟</h3>
-        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت های شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
+        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
 
         <ul>
             <li>@arzpricekshbot تتر</li>
@@ -584,7 +587,7 @@ class Arz:
                 )
             )
 
-        if query in ['سکه', 'سکه بهار آزادی', 'سکه بهار ازادی', 'بهار ازادی', 'بهار آزادی']:
+        if query in ['سکه', 'سکه بهار آزادی', 'سکه بهار ازادی', 'بهار ازادی', 'بهار آزادی', 'آزادی', 'ازادی']:
             result.append(
                 InlineQueryResultArticle(
                     id=str(uuid.uuid4()),
@@ -1069,14 +1072,25 @@ class Arz:
                     parse_mode='HTML')
                 return
 
-            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', text):
+        except requests.exceptions.RequestException:
+            await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+            return
+
+    async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_text = update.message.text
+
+        try:
+            data = await self.get_arz(MAIN_API)
+            internal_car = await self.get_car(f'{CAR_API}/dakheli')
+            external_car = await self.get_car(f'{CAR_API}/varedati')
+
+            if re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', user_text):
                 await self.reaction(update, context)
-                normalized_text = text.translate(str.maketrans(
+                normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
                 amount_text = normalized_text.split()[0].replace(',', '.')
-                data = await self.get_arz(MAIN_API)
                 dollar = data['currency_prices']['items'][0]
                 toman = float(amount_text) * int(dollar['sell_price']['value'])
                 time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
@@ -1085,15 +1099,14 @@ class Arz:
                     f'\U0001f4b5 {amount_text} دلار = {int(toman):,} تومان\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
-            
-            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', text):
+                
+            elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', user_text):
                 await self.reaction(update, context)
-                normalized_text = text.translate(str.maketrans(
+                normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
                 amount_text = normalized_text.split()[0].replace(',', '.')
-                data = await self.get_arz(MAIN_API)
                 eurro = data['currency_prices']['items'][1]
                 toman = float(amount_text) * int(eurro['sell_price']['value'])
                 time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
@@ -1103,14 +1116,13 @@ class Arz:
                 )
                 return
 
-            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:گرم(?:\s+طلا)?|طلا)\s*', text):
+            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:گرم(?:\s+طلا)?|طلا)\s*', user_text):
                 await self.reaction(update, context)
-                normalized_text = text.translate(str.maketrans(
+                normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
                 ))
                 amount_text = normalized_text.split()[0].replace(',', '.')
-                data = await self.get_arz(MAIN_API)
                 tala = data['gold_prices']['items'][1]['price']
                 toman = float(amount_text) * int(tala)
                 time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
@@ -1119,7 +1131,55 @@ class Arz:
                     f'💰 {amount_text} گرم طلا = {int(toman):,}\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
+            
+            send_message = await update.message.reply_text("🤖 در حال تحلیل و پاسخ...")
 
+            tether = data['crypto_prices']['items'][0]['price_toman']
+            dollar = data['currency_prices']['items'][0]['sell_price']['value']
+            eurro = data['currency_prices']['items'][1]['sell_price']['value']
+            seke_emami = data['gold_prices']['items'][2]['price']
+            azadi = data['gold_prices']['items'][3]['price']
+            nim = data['gold_prices']['items'][4]['price']
+            rob = data['gold_prices']['items'][5]['price']
+            tala_18 = data['gold_prices']['items'][1]['price']
+
+            prices = (
+                "اطلاعات لحظه ای بازار امروز:\n"
+                f"قیمت تتر: {int(tether):,}\n"
+                f"قیمت دلار: {int(dollar):,}\n"
+                f"قیمت یورو: {int(eurro):,}\n"
+                f"قیمت سکه امامی: {int(seke_emami):,}\n"
+                f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
+                f"قیمت نیم سکه: {int(nim):,}\n"
+                f"قیمت ربع سکه: {int(rob):,}\n"
+                f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
+                f"لیست نام و قیمت و اطلاعات خودرو های داخلی ایرانی: {internal_car}\n"
+                f"لیست نام و قیمت و اطلاعات خودرو های وارداتی که وارد ایران شده اند: {external_car}"
+            )
+
+            full_prompt = f"""
+                تو یک مشاور مالی هوشمند هستی. 
+                {prices}
+                
+                سوال کاربر این است: "{user_text}"
+                
+                لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
+                اگر هم کاربر شروع کرد به چت کردن باهات، محترمانه جواب بده و بحث رو ببر سمت قیمت ها و تحلیل آن ها.
+            """
+
+            try:
+                result = self.client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=full_prompt
+                )
+
+                await send_message.edit_text(result.text)
+                return
+            
+            except Exception:
+                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                return
+            
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
             return
@@ -1159,6 +1219,13 @@ if __name__ == '__main__':
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     application.post_init = post_init
 
+    button_text = ['💱 خلاصه قیمت ها 🪙', '🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰', '💱 قیمت ارز ها 💱', 
+        '🚗 خودرو های وارداتی 🚗', '🚗 خودرو های داخلی 🚗', '🧮 تبدیل ارز به ریال 🧮', 'هیوندای',
+        'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی',
+        'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا', 'سایپا', 'ایران خودرو', 'سایر', 'بهمن موتور', '🔙 بازگشت'
+    ]
+    pattern = f"^({'|'.join(button_text)})$"
+
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("update", arz.update))
@@ -1169,8 +1236,9 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler("unset", arz.unset_hours))
     application.add_handler(CommandHandler("help", arz.help))
     application.add_handler(InlineQueryHandler(arz.inline_query_handler))
+    application.add_handler(MessageHandler(filters.Regex(pattern), arz.take_price))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.take_price))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
     #application.job_queue.run_once(arz.check_update, when=5)
 
