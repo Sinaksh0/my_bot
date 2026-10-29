@@ -1163,7 +1163,7 @@ class Arz:
             """
 
             try:
-                result = await self.client.models.generate_content(
+                result = await self.client.aio.models.generate_content(
                     model='gemini-3.8-flash',
                     contents=full_prompt
                 )
