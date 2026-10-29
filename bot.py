@@ -1,3 +1,4 @@
+import asyncio
 import requests
 import os
 import json
@@ -26,7 +27,13 @@ class Arz:
     def __init__(self):
         self.tehran = ZoneInfo("Asia/Tehran")
         self.fernet = Fernet(KEY)
-        self.client = genai.Client(api_key=API_GEN)
+        self.client = genai.Client(
+            api_key=API_GEN,
+            http_options=genai.types.HttpOptions(
+                timeout=60_000,
+                retry_options=genai.types.HttpRetryOptions(attempts=1)
+            )
+        )
         self.set = self.load_hours()
 
         self.keyboard = [
@@ -174,12 +181,12 @@ class Arz:
         return
     
     async def get_arz(self, url):
-        response = requests.get(url, timeout=10).json()
-        return response
+        response = await asyncio.to_thread(requests.get, url, timeout=10)
+        return response.json()
 
     async def get_car(self, url):
-        response = requests.get(url, timeout=10).json()
-        return response['cars']
+        response = await asyncio.to_thread(requests.get, url, timeout=10)
+        return response.json()['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
         users = self.load_state()
@@ -639,7 +646,7 @@ class Arz:
         await update.inline_query.answer(result, cache_time=5)
 
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
-        self.data = self.load_price()
+        self.data = await asyncio.to_thread(self.load_price)
         data = await self.get_arz(MAIN_API)
         oil = await self.get_arz(OIL)
 
@@ -727,7 +734,7 @@ class Arz:
         """
 
         if flag:
-            self.upload_data(self.data, 'prices')
+            await asyncio.to_thread(self.upload_data, self.data, 'prices')
 
         if context.job is not None:
             await self.send_rich_message(context.job.chat_id, html)
@@ -761,7 +768,7 @@ class Arz:
     
     async def take_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text
-        self.data = self.load_price()
+        self.data = await asyncio.to_thread(self.load_price)
 
         if text is None:
             return
@@ -887,7 +894,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    self.upload_data(self.data, 'prices')
+                    await asyncio.to_thread(self.upload_data, self.data, 'prices')
                 return
             
             elif text == '💰 قیمت طلا 💰':
@@ -929,7 +936,7 @@ class Arz:
                 await self.send_rich_message(update.effective_chat.id, html)
 
                 if flag:
-                    self.upload_data(self.data, 'prices')
+                    await asyncio.to_thread(self.upload_data, self.data, 'prices')
                 return
             
             elif text == '💱 خلاصه قیمت ها 🪙':
@@ -1150,6 +1157,7 @@ class Arz:
 
             full_prompt = f"""
                 تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
+                این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
                 {prices}
 
                 نام کاربر: {update.effective_user.full_name}
@@ -1163,16 +1171,10 @@ class Arz:
             """
 
             try:
-                import asyncio
-            
-                def call_gemini():
-                    return self.client.models.generate_content(
-                        model='gemini-3.8-flash',
-                        contents=full_prompt
-                    )
-                    
-                result = await asyncio.to_thread(call_gemini)
-                
+                result = await self.client.aio.models.generate_content(
+                    model='gemini-3.8-flash',
+                    contents=full_prompt
+                )
                 await send_message.delete()
                 await update.message.reply_text(result.text, parse_mode="HTML")
                 return
@@ -1243,7 +1245,7 @@ if __name__ == '__main__':
     application.add_handler(InlineQueryHandler(arz.inline_query_handler))
     application.add_handler(MessageHandler(filters.Regex(pattern), arz.take_price))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler, block=False))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
     #application.job_queue.run_once(arz.check_update, when=5)
 
