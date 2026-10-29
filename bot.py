@@ -1163,7 +1163,7 @@ class Arz:
 
             try:
                 result = self.client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.8-flash',
                     contents=full_prompt
                 )
 
@@ -1171,8 +1171,8 @@ class Arz:
                 return
             
             except Exception as e:
-                print(f'Gen AI Error: {e}')
-                await send_message.edit_text(f"متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.\n{e}")
+                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.❌")
+                await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}')
                 return
             
         except requests.exceptions.RequestException:
