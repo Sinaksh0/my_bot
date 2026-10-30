@@ -180,12 +180,19 @@ class Arz:
         return
     
     async def get_arz(self, url):
-        response = requests.get(url, timeout=10).json()
-        return response
+        timeout = aiohttp.ClientTimeout(total=10)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as result:
+                return await result.json()
 
     async def get_car(self, url):
-        response = requests.get(url, timeout=10).json()
-        return response['cars']
+        timeout = aiohttp.ClientTimeout(total=10)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as result:
+                response = await result.json()
+                return response['cars']
 
     async def check_update(self, context: ContextTypes.DEFAULT_TYPE):
         users = self.load_state()
@@ -276,17 +283,17 @@ class Arz:
         await self.reaction(update, context)
 
         html = f"""
-        <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
+            <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
-        <h2>✨ تغییرات این نسخه</h2>
-        <p>دستیار قدرتمند هوش مصنوعی <b>Google Gemini</b> به ربات اضافه شد!.<ح.🚀</p>
+            <h2>✨ تغییرات این نسخه</h2>
+            <p>دستیار قدرتمند هوش مصنوعی <b>Google Gemini</b> به ربات اضافه شد!.<ح.🚀</p>
 
-        <p>از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک مشاور و تحلیلگر هوشمند تبدیل شده است. 💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده! همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
+            <p>از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک مشاور و تحلیلگر هوشمند تبدیل شده است. 💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده! همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
 
 
-        <ul>
-            <li><input type="checkbox" checked><strong>تغییرات جدید با موفقیت انجام شد</strong></li>
-        </ul>
+            <ul>
+                <li><input type="checkbox" checked><strong>تغییرات جدید با موفقیت انجام شد</strong></li>
+            </ul>
         """
 
         await self.send_rich_message(chat_id, html, reply_markup)
@@ -310,6 +317,38 @@ class Arz:
         """
 
         await self.send_rich_message(chat_id, html)
+        return
+
+    async def options(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.reaction(update, context)
+        chat_id = update.effective_chat.id
+
+        html = f"""
+            <h3>🤖 راهنمای جامع و آپشن‌های ربات قیمت‌نما</h3>
+            <p><mark>⚡️ دستیار هوشمند بازار مالی، طلا، ارز و خودرو</mark></p>
+
+            <table bordered striped compact>
+                <tr><th>🎯 بخش / دکمه</th><th>📋 توضیحات و قابلیت‌ها</th></tr>
+                <tr><td>💱 خلاصه قیمت‌ها 🪙</td><td>مشاهده گزارش جامع لحظه‌ای از تتر، دلار، یورو، سکه‌ها، طلای ۱۸ عیار و نفت به همراه کمینه و بیشینه روزانه.</td></tr>
+                <tr><td>🪙 قیمت سکه 🪙</td><td>دریافت نرخ لحظه‌ای و حباب انواع سکه (امامی، بهار آزادی، نیم سکه و ربع سکه).</td></tr>
+                <tr><td>💰 قیمت طلای 💰</td><td>بررسی قیمت لحظه‌ای گرم طلای ۱۸ عیار و تغییرات آن در طول روز.</td></tr>
+                <tr><td>💱 قیمت ارزها 💱</td><td>مشاهده نرخ انواع ارزهای معتبر (دلار، یورو، درهم، لیر، پوند، یوان و...) به همراه نرخ تبدیل و نسبت به دلار.</td></tr>
+                <tr><td>🚗 خودروهای داخلی 🚗</td><td>استعلام قیمت کارخانه و بازار محصولات سایپا، ایران‌خودرو، مدیران‌خودرو، کرمان‌موتور و بهمن‌موتور.</td></tr>
+                <tr><td>🚙 خودروهای وارداتی  وارداتی</td><td>مشاهده قیمت روز خودروهای خارجی و برندهای جهانی (تویوتا، بنز، بی‌آم‌و، هیوندای، کیا و...).</td></tr>
+                <tr><td>🧮 تبدیل ارز به ریال 🧮</td><td>قابلیت هوشمند محاسبه و تبدیل مقادیر دلخواه (مثلاً: <code>10 دلار</code>، <code>25 یورو</code> یا <code>30 گرم طلا</code>) به تومان.</td></tr>
+                <tr><td>🤖 هوش مصنوعی Gemini</td><td>ارسال هرگونه سوال متفرقه، تحلیل اقتصادی یا مشاوره مالی به صورت متنی و دریافت پاسخ دقیق در چند ثانیه.</td></tr>
+                <tr><td>⏰ گزارش‌های خودکار (/set)</td><td>تنظیم ساعت‌های مشخص در روز برای دریافت خودکار خلاصه وضعیت بازار در چت یا گروه.</td></tr>
+            </table>
+
+            <p>💡 <b>جستجوی سریع (Inline):</b> در هر چتی با نوشتن نام ربات و کلیدواژه (مثل <code>@arzpricekshbot دلار</code>) می‌توانید قیمت‌ها را به صورت اینلاین به اشتراک بگذارید.</p>
+
+            <tg-button-row>
+                <tg-button type="url" style="success" url="https://t.me/SI_KSH">پشتیبانی ربات</tg-button>
+            </tg-button-row>
+        """
+
+        await self.send_rich_message(chat_id, html)
+        return
 
     async def set_hours(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.reaction(update, context)
@@ -1213,7 +1252,7 @@ async def post_init(application):
 
     await application.bot.set_my_commands([
         BotCommand('start', '🚀 شروع و نمایش منو'),
-        BotCommand('update', '✨ مشاهده‌ی تغییرات نسخه'),
+        BotCommand('options', '📋 معرفی آپشن‌های ربات'),
         BotCommand('set', '⏰ تنظیم ساعت گزارش قیمت'),
         BotCommand('myschedule', '🗓️ دیدن ساعت‌های فعال'),
         BotCommand('unset', '⏸️ توقف گزارش زمان‌بندی‌شده'),
@@ -1236,6 +1275,7 @@ if __name__ == '__main__':
     arz = Arz()
     application.add_handler(CommandHandler("start", arz.start))
     application.add_handler(CommandHandler("update", arz.update))
+    application.add_handler(CommandHandler("options", arz.options))
     application.add_handler(CommandHandler("manager", arz.send_to_user))
     application.add_handler(CommandHandler("send", arz.send_to_manager))
     application.add_handler(CommandHandler("set", arz.set_hours))
