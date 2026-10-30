@@ -1,4 +1,5 @@
 import requests
+import asyncio
 import os
 import json
 import base64
@@ -21,7 +22,7 @@ GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
 API_GEN = os.getenv('Gen_API')
-VERSION = '4.1.0'
+VERSION = '4.1.1'
 
 class Arz:
     def __init__(self):
@@ -1209,10 +1210,8 @@ class Arz:
 
             await send_message.edit_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
-                result = await self.client.aio.interactions.create(
-                    model='gemini-3.8-flash',
-                    input=full_prompt
-                )
+                result = await asyncio.to_thread(self.client.interactions.create,
+                model='gemini-3.8-flash', input=full_prompt)
 
                 await send_message.delete()    
                 await update.message.reply_text(result.output_text, parse_mode="HTML")
@@ -1221,13 +1220,11 @@ class Arz:
             except APIError as ai_error:
                 await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                 await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
-                print(f'AI Error: {ai_error}')
                 return
             
         except Exception as e:
             await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
             await context.bot.send_message(ADMIN_ID, f'ارور هنگام ارتباط برای {update.effective_user.full_name}\n\n{e}')
-            print(f'unknown error: {e}')
             return
 
 def auto_set_hours(job_queue):
