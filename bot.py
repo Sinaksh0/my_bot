@@ -1120,7 +1120,7 @@ class Arz:
             await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
                 parse_mode='HTML')
             return
-
+            
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.reaction(update, context)
         user_text = update.message.text
@@ -1131,7 +1131,7 @@ class Arz:
             except requests.exceptions.RequestException:
                 await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
                 return
-        
+
             if re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -1146,7 +1146,7 @@ class Arz:
                     f'\U0001f4b5 {amount_text} دلار = {int(toman):,} تومان\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
-                
+
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -1187,28 +1187,23 @@ class Arz:
             tala_18 = data['gold_prices']['items'][1]['price']
 
             prices = (
-                f"قیمت تتر: {int(tether):,}\n"
-                f"قیمت دلار: {int(dollar):,}\n"
-                f"قیمت یورو: {int(eurro):,}\n"
-                f"قیمت سکه امامی: {int(seke_emami):,}\n"
-                f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
-                f"قیمت نیم سکه: {int(nim):,}\n"
-                f"قیمت ربع سکه: {int(rob):,}\n"
-                f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
+                f"تتر: {int(tether):,}\n"
+                f"دلار: {int(dollar):,}\n"
+                f"یورو: {int(eurro):,}\n"
+                f"سکه امامی: {int(seke_emami):,}\n"
+                f"طلا ۱۸: {int(tala_18):,}"
             )
 
-            full_prompt = f"""
-                تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
-                این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
-                {prices}
-                
-                سوال کاربر این است: "{user_text}"
-                
-                ⚠️ قوانین مهم نگارشی:
-                1. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
-                2. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
-                3. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
-            """
+            full_prompt = (
+                f"تو مشاور مالی ربات قیمت‌نما هستی.\n"
+                f"نرخ‌های لحظه‌ای بازار:\n{prices}\n\n"
+                f"سوال کاربر: {user_text}\n\n"
+                f"قوانین:\n"
+                f"1. اگر سوال مربوط به بازار و قیمت بود از نرخ‌ها استفاده کن، وگرنه متناسب با سوال پاسخ بده.\n"
+                f"2. به هیچ وجه از ستاره (* یا **) استفاده نکن.\n"
+                f"3. برای برجسته‌سازی از تگ HTML مثل <b>متن</b> یا ایموجی استفاده کن."
+            )
+
 
             send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
@@ -1220,12 +1215,12 @@ class Arz:
                 await send_message.delete()    
                 await update.message.reply_text(result.output_text, parse_mode="HTML")
                 return
-            
+
             except Exception as ai_error:
                 await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                 await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
                 return
-            
+
         except Exception as e:
             await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
             await context.bot.send_message(ADMIN_ID, f'ارور هنگام ارتباط برای {update.effective_user.full_name}\n\n{e}')
