@@ -13,6 +13,7 @@ from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKe
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, InlineQueryHandler, filters
 
 MAIN_API = os.getenv('Main_API')
+GOLD_API = os.getenv('Gold_API')
 CAR_API = os.getenv('Car_API')
 OIL = os.getenv('Oil')
 ADMIN_ID = int(os.getenv('Admin_ID'))
@@ -20,7 +21,7 @@ GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
 API_GEN = os.getenv('Gen_API')
-VERSION = '4.1.1'
+VERSION = '4.2.0'
 
 class Arz:
     def __init__(self):
@@ -674,6 +675,7 @@ class Arz:
     async def send_daily(self, context: ContextTypes.DEFAULT_TYPE):
         self.data = self.load_price()
         data = await self.get_arz(MAIN_API)
+        gold = await self.get_arz(GOLD_API)
         oil = await self.get_arz(OIL)
 
         flag = False
@@ -695,6 +697,8 @@ class Arz:
         seke_emami = data['gold_prices']['items'][2]
         seke = data['gold_prices']['items'][3]
         tala_18 = data['gold_prices']['items'][1]
+        gold_global = gold['data'][0]
+        silver = gold['data'][1]
         oil = oil['items'][0]
 
         if int(tether['price_toman']) not in tether_data:
@@ -752,6 +756,8 @@ class Arz:
             <tr><td>🪙 سکه امامی</td><td>{int(seke_emami['price']):,}</td><td>{emami_max:,}</td><td>{emami_min:,}</td><td>{int(seke_emami['bubble']['amount']):,}</td></tr>
             <tr><td>🪙 سکه بهار آزادی</td><td>{int(seke['price']):,}</td><td>{azadi_max:,}</td><td>{azadi_min:,}</td><td>{int(seke['bubble']['amount']):,}</td></tr>
             <tr><td>💰 طلای 18 عیار</td><td>{int(tala_18['price']):,}</td><td>{tala_max:,}</td><td>{tala_min:,}</td><td>{int(tala_18['bubble']['amount']):,}</td></tr>
+            <tr><td>🥇 انس طلا</td><td>{gold_global['price']}</td><td>{gold_global['max']}</td><td>{gold_global['min']}</td><td>---</td></tr>
+            <tr><td>🥈 انس نقره</td><td>{silver['price']}</td><td>{silver['max']}</td><td>{silver['min']}</td><td>---</td></tr>
             <tr><td>🛢️ {oil['name']}</td><td>{oil['price']} دلار</td><td>---</td><td>---</td><td>---</td></tr>
         </table>
         <tg-button-row>
@@ -801,6 +807,7 @@ class Arz:
         
         try:
             data = await self.get_arz(MAIN_API)
+            gold = await self.get_arz(GOLD_API)
         except requests.exceptions.RequestException:
             await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
             return
@@ -930,6 +937,8 @@ class Arz:
             await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت طلا...')
             tala_18 = data['gold_prices']['items'][1]
+            gold_global = gold['data'][0]
+            silver = gold['data'][1]
 
             flag = False
             today = datetime.now(self.tehran).strftime('%m/%d/%Y')
@@ -949,12 +958,14 @@ class Arz:
             await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
             html = f"""
-                <h2>💰 بازار طلای ۱۸ عیار</h2>
+                <h2>💰 بازار طلا و نقره</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
                 <table bordered compact>
                     <tr><th>شاخص</th><th>💵 مقدار</th><th>⬆️ بیشینه</th><th>⬇️ کمینه</th><th>🫧 حباب</th></tr>
                     <tr><td>💰 طلای 18 عیار</td><td>{int(tala_18['price']):,}</td><td>{max_price:,}</td><td>{min_price:,}</td><td>{int(tala_18['bubble']['amount']):,}</td></tr>
+                    <tr><td>🥇 انس طلا</td><td>{gold_global['price']}</td><td>{gold_global['max']}</td><td>{gold_global['min']}</td><td>---</td></tr>
+                    <tr><td>🥈 انس نقره</td><td>{silver['price']}</td><td>{silver['max']}</td><td>{silver['min']}</td><td>---</td></tr>
                 </table>
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
@@ -1166,11 +1177,44 @@ class Arz:
                 )
                 return
 
+            tether = data['crypto_prices']['items'][0]['price_toman']
+            dollar = data['currency_prices']['items'][0]['sell_price']['value']
+            eurro = data['currency_prices']['items'][1]['sell_price']['value']
+            seke_emami = data['gold_prices']['items'][2]['price']
+            azadi = data['gold_prices']['items'][3]['price']
+            nim = data['gold_prices']['items'][4]['price']
+            rob = data['gold_prices']['items'][5]['price']
+            tala_18 = data['gold_prices']['items'][1]['price']
+
+            prices = (
+                f"قیمت تتر: {int(tether):,}\n"
+                f"قیمت دلار: {int(dollar):,}\n"
+                f"قیمت یورو: {int(eurro):,}\n"
+                f"قیمت سکه امامی: {int(seke_emami):,}\n"
+                f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
+                f"قیمت نیم سکه: {int(nim):,}\n"
+                f"قیمت ربع سکه: {int(rob):,}\n"
+                f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
+            )
+
+            full_prompt = f"""
+                تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
+                این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
+                {prices}
+                
+                سوال کاربر این است: "{user_text}"
+                
+                ⚠️ قوانین مهم نگارشی:
+                1. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
+                2. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
+                3. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
+            """
+
             send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
                 result = await self.client.aio.interactions.create(
                     model='gemini-3.8-flash', 
-                    input=user_text
+                    input=full_prompt
                 )
 
                 await send_message.delete()    
