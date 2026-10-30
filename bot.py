@@ -1,5 +1,4 @@
 import requests
-import asyncio
 import os
 import json
 import base64
@@ -1192,26 +1191,28 @@ class Arz:
             )
 
             full_prompt = f"""
-                #تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
-                #این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
+                تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
+                این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
                 {prices}
 
-                #نام کاربر: {update.effective_user.full_name}
-                #سوال کاربر این است: "{user_text}"
+                نام کاربر: {update.effective_user.full_name}
+                سوال کاربر این است: "{user_text}"
                 
-                #لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
+                لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
                 
                 ⚠️ قوانین مهم نگارشی:
                 1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
-                #2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
-                #3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
-                #4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
+                2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
+                3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
+                4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
             """
 
             await send_message.edit_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
-                result = await asyncio.to_thread(self.client.interactions.create,
-                model='gemini-3.8-flash', input=full_prompt)
+                result = await self.client.aio.interactions.create(
+                    model='gemini-3.8-flash', 
+                    input=full_prompt
+                )
 
                 await send_message.delete()    
                 await update.message.reply_text(result.output_text, parse_mode="HTML")
@@ -1282,7 +1283,7 @@ if __name__ == '__main__':
     application.add_handler(InlineQueryHandler(arz.inline_query_handler))
     application.add_handler(MessageHandler(filters.Regex(pattern), arz.take_price))
     application.add_handler(MessageHandler(filters.Regex(r'^⚙️ پنل مدیریت ⚙️$'), arz.admin_panel))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, arz.genai_handler, block=False))
     application.add_handler(CallbackQueryHandler(arz.handle_panel))
     #application.job_queue.run_once(arz.check_update, when=5)
 
