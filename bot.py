@@ -450,9 +450,9 @@ class Arz:
             message += '📋 فهرست کاربران\n\n'
             for i, user in enumerate(data, start=1):
                 message += (
-                    f'{i}. {user['Name']} - {user['ID']}\n\n'
+                    f'{i}. {user['Name']} (->) <b>{user['ID']}</b>\n\n'
                 )
-            await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
         elif choose == 'messages':
             await query.edit_message_text('📨 برای ارسال پیام، دستور /manager رو با گیرنده و متن بفرست.\nنمونه: /manager all سلام', reply_markup=InlineKeyboardMarkup(keyboard))
@@ -1077,6 +1077,7 @@ class Arz:
             return
 
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await self.reaction(update, context)
         user_text = update.message.text
 
         try:
@@ -1129,52 +1130,51 @@ class Arz:
             
             send_message = await update.message.reply_text("🤖 در حال تحلیل و پاسخ...")
 
-            tether = data['crypto_prices']['items'][0]['price_toman']
-            dollar = data['currency_prices']['items'][0]['sell_price']['value']
-            eurro = data['currency_prices']['items'][1]['sell_price']['value']
-            seke_emami = data['gold_prices']['items'][2]['price']
-            azadi = data['gold_prices']['items'][3]['price']
-            nim = data['gold_prices']['items'][4]['price']
-            rob = data['gold_prices']['items'][5]['price']
-            tala_18 = data['gold_prices']['items'][1]['price']
+            #tether = data['crypto_prices']['items'][0]['price_toman']
+            #dollar = data['currency_prices']['items'][0]['sell_price']['value']
+            #eurro = data['currency_prices']['items'][1]['sell_price']['value']
+            #seke_emami = data['gold_prices']['items'][2]['price']
+            #azadi = data['gold_prices']['items'][3]['price']
+            #nim = data['gold_prices']['items'][4]['price']
+            #rob = data['gold_prices']['items'][5]['price']
+            #tala_18 = data['gold_prices']['items'][1]['price']
 
-            prices = (
-                "اطلاعات لحظه ای بازار امروز:\n"
-                f"قیمت تتر: {int(tether):,}\n"
-                f"قیمت دلار: {int(dollar):,}\n"
-                f"قیمت یورو: {int(eurro):,}\n"
-                f"قیمت سکه امامی: {int(seke_emami):,}\n"
-                f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
-                f"قیمت نیم سکه: {int(nim):,}\n"
-                f"قیمت ربع سکه: {int(rob):,}\n"
-                f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
-            )
+            #prices = (
+                #"اطلاعات لحظه ای بازار امروز:\n"
+                #f"قیمت تتر: {int(tether):,}\n"
+                #f"قیمت دلار: {int(dollar):,}\n"
+                #f"قیمت یورو: {int(eurro):,}\n"
+                #f"قیمت سکه امامی: {int(seke_emami):,}\n"
+                #f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
+                #f"قیمت نیم سکه: {int(nim):,}\n"
+                #f"قیمت ربع سکه: {int(rob):,}\n"
+                #f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
+            #)
 
-            full_prompt = f"""
-                تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
-                این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
-                {prices}
+            #full_prompt = f"""
+                #تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
+                #این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
+                #{prices}
 
-                نام کاربر: {update.effective_user.full_name}
-                سوال کاربر این است: "{user_text}"
+                #نام کاربر: {update.effective_user.full_name}
+                #سوال کاربر این است: "{user_text}"
                 
-                لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
+                #لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
                 
-                ⚠️ قوانین مهم نگارشی:
-                1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
-                2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
-                3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
-                4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
-            """
+                #⚠️ قوانین مهم نگارشی:
+                #1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
+                #2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
+                #3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
+                #4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
+            #"""
 
             try:
-                result = await self.client.aio.models.generate_content(
-                    model='gemini-3.1-pro-preview',
-                    contents=full_prompt
+                result = await self.client.aio.interactions.create(
+                    model='gemini-3.8-flash',
+                    input=user_text
                 )
-                        
 
-                await update.message.reply_text(result, parse_mode="HTML")
+                await update.message.reply_text(result.output_text, parse_mode="HTML")
                 return
             
             except Exception as e:
