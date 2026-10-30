@@ -9,6 +9,7 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 from cryptography.fernet import Fernet
 from google import genai
+from google.genai.errors import APIError
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultArticle, InputTextMessageContent, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, CallbackQueryHandler, InlineQueryHandler, filters
 
@@ -20,7 +21,7 @@ GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
 API_GEN = os.getenv('Gen_API')
-VERSION = '4.0.0'
+VERSION = '4.1.0'
 
 class Arz:
     def __init__(self):
@@ -61,6 +62,11 @@ class Arz:
             ['مدیران خودرو', 'کرمان موتور'],
             ['سایر', 'بهمن موتور'], 
             ['🔙 بازگشت']
+        ]
+
+        self.inline_keyboard = [
+            [InlineKeyboardButton('📊 تعداد کاربران 📊', callback_data='users')],
+            [InlineKeyboardButton('📨 پیام همگانی 📨', callback_data='messages')]
         ]
 
     def load_state(self) -> list:
@@ -273,18 +279,9 @@ class Arz:
         <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
         <h2>✨ تغییرات این نسخه</h2>
-        <p>دیگه نیازی نیست برای چک کردن قیمت ها حتما وارد پیوی ربات شوید! از این پس با قابلیت <b>(حالت اینلاین | Inline Mode)</b> میتوانید در هر چت یا گروهی که هستید، سریع‌تر از همیشه به قیمت ها درسترسی داشته باشید</p>
+        <p>دستیار قدرتمند هوش مصنوعی <b>Google Gemini</b> به ربات اضافه شد!.<ح.🚀</p>
 
-        <h3>✨ چطوری ازش استفاده کنیم؟</h3>
-        <p>خیلی ساده! کافیه در هر چتی <b>(چه گروه، چه کانال یا حتی چت عای شخصی خودتون)</b>، آیدی ربات را با یک فاصله تایپ کنید و نام ارز مورد نظر را وارد کنید:</p>
-
-        <ul>
-            <li>@arzpricekshbot تتر</li>
-            <li>@arzpricekshbot دلار</li>
-            <li>@arzpricekshbot طلا 18 عیار</li>
-        </ul>
-
-        <p>همون لحظه یک منو کشویی باز می‌شود که میتوانید با یک کلیک، قیمت لحظه‌ای را بفرستید وسط چت تا همه دوستانتان ببینند!😎</p>
+        <p>از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک مشاور و تحلیلگر هوشمند تبدیل شده است. 💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده! همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
 
 
         <ul>
@@ -424,15 +421,10 @@ class Arz:
             return
 
         await self.reaction(update, context)
-        
-        self.inline_keyboard = [
-            [InlineKeyboardButton('📊 تعداد کاربران 📊', callback_data='users')],
-            [InlineKeyboardButton('📨 پیام همگانی 📨', callback_data='messages')]
-        ]
 
         reply_markup = InlineKeyboardMarkup(self.inline_keyboard)
         await update.message.reply_text('⚙️ پنل مدیریت باز شد؛ یکی از گزینه‌ها رو انتخاب کن.',
-                reply_markup=reply_markup)
+            reply_markup=reply_markup)
 
     async def handle_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
@@ -450,7 +442,7 @@ class Arz:
             message += '📋 فهرست کاربران\n\n'
             for i, user in enumerate(data, start=1):
                 message += (
-                    f'{i}. {user['Name']} (->) <b>{user['ID']}</b>\n\n'
+                    f'{i}. {user['Name']} (->) <code>{user['ID']}</code>\n\n'
                 )
             await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
@@ -472,7 +464,7 @@ class Arz:
             return
 
         target = rest.split()[0]
-        msg = ' '.join(rest.split()[1:]).strip()
+        msg = rest.replace(target, '').strip()
 
         if not msg:
             await update.message.reply_text('✍️ متن پیام رو هم بنویس. نمونه:\n/manager all سلام\n/manager 123456789 سلام')
@@ -515,7 +507,7 @@ class Arz:
             await update.message.reply_text('✍️ متن پیامت رو بعد از /send بنویس.\nنمونه: /send سلام، یک پیام دارم.')
             return
         
-        msg = text.replace('/send', '')
+        msg = text.replace('/send', '').strip()
         await context.bot.send_message(chat_id=ADMIN_ID, text=f'📨 پیام از {update.effective_user.full_name} ({update.effective_user.id}):\n\n{msg}')
         await update.message.reply_text('✅ پیامت برای مدیر فرستاده شد.')
 
@@ -770,32 +762,36 @@ class Arz:
             return
         
         try:
-            if text == '💱 قیمت ارز ها 💱':
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال دریافت قیمت‌ها...')
-                data = await self.get_arz(MAIN_API)
-                data = data['currency_prices']['items']
-                dollar = data[0]
-                eurro = data[1]
-                eur_rate = eurro["usd_rate"]["value"]
-                canada = data[6]
-                can_rate = canada["usd_rate"]["value"]
-                derham = data[2]
-                der_rate = derham["usd_rate"]["value"]
-                lir = data[3]
-                lir_rate = lir["usd_rate"]["value"]
-                pond = data[4]
-                pond_rate = pond["usd_rate"]["value"]
-                dinar = data[9]
-                dinar_rate = dinar["usd_rate"]["value"]
-                oman = data[15]
-                oman_rate = oman["usd_rate"]["value"]
-                arab = data[19]
-                arab_rate = arab["usd_rate"]["value"]
+            data = await self.get_arz(MAIN_API)
+        except requests.exceptions.RequestException:
+            await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+            return
+        
+        if text == '💱 قیمت ارز ها 💱':
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال دریافت قیمت‌ها...')
+            data = data['currency_prices']['items']
+            dollar = data[0]
+            eurro = data[1]
+            eur_rate = eurro["usd_rate"]["value"]
+            canada = data[6]
+            can_rate = canada["usd_rate"]["value"]
+            derham = data[2]
+            der_rate = derham["usd_rate"]["value"]
+            lir = data[3]
+            lir_rate = lir["usd_rate"]["value"]
+            pond = data[4]
+            pond_rate = pond["usd_rate"]["value"]
+            dinar = data[9]
+            dinar_rate = dinar["usd_rate"]["value"]
+            oman = data[15]
+            oman_rate = oman["usd_rate"]["value"]
+            arab = data[19]
+            arab_rate = arab["usd_rate"]["value"]
 
-                await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
+            await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
-                html = f"""
+            html = f"""
                 <h3>💱 نرخ روز ارزها</h3>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
@@ -814,64 +810,63 @@ class Arz:
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
-                """
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, html)
-                return
+            """
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, html)
+            return
             
-            elif text == '🪙 قیمت سکه 🪙':
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال دریافت قیمت سکه‌ها...')
-                data = await self.get_arz(MAIN_API)
-                data = data['gold_prices']['items']
+        elif text == '🪙 قیمت سکه 🪙':
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال دریافت قیمت سکه‌ها...')
+            data = data['gold_prices']['items']
 
-                today = datetime.now(self.tehran).strftime('%m/%d/%Y')
-                emami_data = self.data['emami'] if self.data['date'] == today else []
-                azadi_data = self.data['azadi'] if self.data['date'] == today else []
-                nim_data = self.data['nim'] if self.data['date'] == today else []
-                rob_data = self.data['rob'] if self.data['date'] == today else []
+            flag = False
+            today = datetime.now(self.tehran).strftime('%m/%d/%Y')
+            emami_data = self.data['emami'] if self.data['date'] == today else []
+            azadi_data = self.data['azadi'] if self.data['date'] == today else []
+            nim_data = self.data['nim'] if self.data['date'] == today else []
+            rob_data = self.data['rob'] if self.data['date'] == today else []
 
-                if self.data.get('date') != today:
-                    self.data['date'] = today
+            if self.data.get('date') != today:
+                self.data['date'] = today
 
-                message = "🪙 گزارش قیمت سکه\n\n"
-                emami = data[2]
-                azadi = data[3]
-                nim = data[4]
-                rob = data[5]
+            emami = data[2]
+            azadi = data[3]
+            nim = data[4]
+            rob = data[5]
 
-                if int(emami['price']) not in emami_data:
-                    emami_data.append(int(emami['price']))
-                    self.data['emami'] = emami_data
-                    flag = True
+            if int(emami['price']) not in emami_data:
+                emami_data.append(int(emami['price']))
+                self.data['emami'] = emami_data
+                flag = True
 
-                if int(azadi['price']) not in azadi_data:
-                    azadi_data.append(int(azadi['price']))
-                    self.data['azadi'] = azadi_data
-                    flag = True
+            if int(azadi['price']) not in azadi_data:
+                azadi_data.append(int(azadi['price']))
+                self.data['azadi'] = azadi_data
+                flag = True
 
-                if int(nim['price']) not in nim_data:
-                    nim_data.append(int(nim['price']))
-                    self.data['nim'] = nim_data
-                    flag = True
+            if int(nim['price']) not in nim_data:
+                nim_data.append(int(nim['price']))
+                self.data['nim'] = nim_data
+                flag = True
 
-                if int(rob['price']) not in rob_data:
-                    rob_data.append(int(rob['price']))
-                    self.data['rob'] = rob_data
-                    flag = True
+            if int(rob['price']) not in rob_data:
+                rob_data.append(int(rob['price']))
+                self.data['rob'] = rob_data
+                flag = True
 
-                max_emami = max(emami_data)
-                min_emami = min(emami_data)
-                max_azadi = max(azadi_data)
-                min_azadi = min(azadi_data)
-                max_nim = max(nim_data)
-                min_nim = min(nim_data)
-                max_rob = max(rob_data)
-                min_rob = min(rob_data)
+            max_emami = max(emami_data)
+            min_emami = min(emami_data)
+            max_azadi = max(azadi_data)
+            min_azadi = min(azadi_data)
+            max_nim = max(nim_data)
+            min_nim = min(nim_data)
+            max_rob = max(rob_data)
+            min_rob = min(rob_data)
 
-                await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
+            await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
-                html = f"""
+            html = f"""
                 <h2>🪙 بازار سکه</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
@@ -885,38 +880,37 @@ class Arz:
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
-                """
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, html)
+            """
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, html)
 
-                if flag:
-                    self.upload_data(self.data, 'prices')
-                return
+            if flag:
+                self.upload_data(self.data, 'prices')
+            return
             
-            elif text == '💰 قیمت طلا 💰':
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال دریافت قیمت طلا...')
-                data = await self.get_arz(MAIN_API)
-                tala_18 = data['gold_prices']['items'][1]
+        elif text == '💰 قیمت طلا 💰':
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال دریافت قیمت طلا...')
+            tala_18 = data['gold_prices']['items'][1]
 
-                flag = False
-                today = datetime.now(self.tehran).strftime('%m/%d/%Y')
-                tala_data = self.data['gold'] if self.data['date'] == today else []
+            flag = False
+            today = datetime.now(self.tehran).strftime('%m/%d/%Y')
+            tala_data = self.data['gold'] if self.data['date'] == today else []
 
-                if self.data['date'] != today:
-                    self.data['date'] = today
+            if self.data['date'] != today:
+                self.data['date'] = today
 
-                if int(tala_18['price']) not in tala_data:
-                    tala_data.append(int(tala_18['price']))
-                    self.data['gold'] = tala_data
-                    flag = True
+            if int(tala_18['price']) not in tala_data:
+                tala_data.append(int(tala_18['price']))
+                self.data['gold'] = tala_data
+                flag = True
 
-                max_price = max(tala_data)
-                min_price = min(tala_data)
+            max_price = max(tala_data)
+            min_price = min(tala_data)
 
-                await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
+            await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
 
-                html = f"""
+            html = f"""
                 <h2>💰 بازار طلای ۱۸ عیار</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
@@ -927,77 +921,80 @@ class Arz:
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
-                """
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, html)
+            """
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, html)
 
-                if flag:
-                    self.upload_data(self.data, 'prices')
-                return
+            if flag:
+                self.upload_data(self.data, 'prices')
+            return
             
-            elif text == '💱 خلاصه قیمت ها 🪙':
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال آماده‌سازی خلاصه‌ی بازار...')
-                result = await self.send_daily(context)
+        elif text == '💱 خلاصه قیمت ها 🪙':
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال آماده‌سازی خلاصه‌ی بازار...')
+            result = await self.send_daily(context)
 
-                await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, result)
-                return
+            await sent.edit_text('📨 در حال آماده‌سازی گزارش...')
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, result)
+            return
             
-            elif text == '🚗 خودرو های داخلی 🚗':
-                await self.reaction(update, context)
-                await update.message.reply_text(
-                    "🚗 فهرست خودروهای داخلی\nیکی از گزینه‌ها را انتخاب کن:",
-                    reply_markup=ReplyKeyboardMarkup(self.dakhelikeyboard, resize_keyboard=True)
-                )
-                return
+        elif text == '🚗 خودرو های داخلی 🚗':
+            await self.reaction(update, context)
+            await update.message.reply_text(
+                "🚗 فهرست خودروهای داخلی\nیکی از گزینه‌ها را انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(self.dakhelikeyboard, resize_keyboard=True)
+            )
+            return
 
-            elif text == '🚗 خودرو های وارداتی 🚗':
-                await self.reaction(update, context)
-                await update.message.reply_text(
-                    "🚙 فهرست خودروهای وارداتی\nیکی از گزینه‌ها را انتخاب کن:",
-                    reply_markup=ReplyKeyboardMarkup(self.carkeyboard, resize_keyboard=True)
-                )
-                return
+        elif text == '🚗 خودرو های وارداتی 🚗':
+            await self.reaction(update, context)
+            await update.message.reply_text(
+                "🚙 فهرست خودروهای وارداتی\nیکی از گزینه‌ها را انتخاب کن:",
+                reply_markup=ReplyKeyboardMarkup(self.carkeyboard, resize_keyboard=True)
+            )
+            return
 
-            elif text in '🔙 بازگشت':
-                await self.reaction(update, context)
-                if update.effective_chat.type == 'private' and update.effective_user.id == ADMIN_ID:
-                    keyboard = self.admin_keyborad
-                else:
-                    keyboard = self.keyboard
-                await update.message.reply_text(
-                    "🏠 به منوی اصلی برگشتی.",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-                )
-                return
+        elif text in '🔙 بازگشت':
+            await self.reaction(update, context)
+            if update.effective_chat.type == 'private' and update.effective_user.id == ADMIN_ID:
+                keyboard = self.admin_keyborad
+            else:
+                keyboard = self.keyboard
+            await update.message.reply_text(
+                "🏠 به منوی اصلی برگشتی.",
+                reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            )
+            return
 
-            elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
+        elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
 
-                cars = {
-                    'ایران خودرو': 'irankhodro',
-                    'سایپا': 'saipa',
-                    'مدیران خودرو': 'modiran',
-                    'کرمان موتور': 'kerman',
-                    'بهمن موتور': 'bahman',
-                    'سایر': 'sayer'
-                }
+            cars = {
+                'ایران خودرو': 'irankhodro',
+                'سایپا': 'saipa',
+                'مدیران خودرو': 'modiran',
+                'کرمان موتور': 'kerman',
+                'بهمن موتور': 'bahman',
+                'سایر': 'sayer'
+            }
 
-                url = cars.get(text)
+            url = cars.get(text)
+            try:
                 data = await self.get_car(f'{CAR_API}/dakheli/{url}')
-                if not data:
-                    await sent.edit_text('❌ اطلاعات خودروها فعلاً در دسترس نیست. کمی بعد دوباره تلاش کن.')
-                    return
-                await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
+            except requests.exceptions.RequestException:
+                await sent.delete()
+                await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+                return
+            
+            await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
 
-                message = ""
-                for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
+            message = ""
+            for item in data:
+                message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
-                html = f"""
+            html = f"""
                 <h2>🚗 قیمت روز خودروهای {text}</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
@@ -1008,48 +1005,51 @@ class Arz:
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
-                """
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, html)
-                return
+            """
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, html)
+            return
 
-            elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
-                await self.reaction(update, context)
-                sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
+        elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
+            await self.reaction(update, context)
+            sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
 
-                cars = {
-                    'هیوندای': 'hyundai',
-                    'کیا': 'kia',
-                    'تویوتا': 'toyota',
-                    'بنز': 'benz',
-                    'بی ام و': 'bmw',
-                    'فولکس واگن': 'volkswagen',
-                    'مزدا': 'mazda',
-                    'ولوو': 'volvo',
-                    'آئودی': 'audi',
-                    'نیسان': 'nissan',
-                    'هوندا': 'honda',
-                    'میتسوبیشی': 'mitsubishi',
-                    'MG': 'mg',
-                    'BYD': 'byd',
-                    'GAC': 'gac',
-                    'چانگان': 'changan',
-                    'ونوسیا': 'venucia',
-                    'اشکودا': 'skoda'
-                }
+            cars = {
+                'هیوندای': 'hyundai',
+                'کیا': 'kia',
+                'تویوتا': 'toyota',
+                'بنز': 'benz',
+                'بی ام و': 'bmw',
+                'فولکس واگن': 'volkswagen',
+                'مزدا': 'mazda',
+                'ولوو': 'volvo',
+                'آئودی': 'audi',
+                'نیسان': 'nissan',
+                'هوندا': 'honda',
+                'میتسوبیشی': 'mitsubishi',
+                'MG': 'mg',
+                'BYD': 'byd',
+                'GAC': 'gac',
+                'چانگان': 'changan',
+                'ونوسیا': 'venucia',
+                'اشکودا': 'skoda'
+            }
 
-                url = cars.get(text)
+            url = cars.get(text)
+            try:
                 data = await self.get_car(f'{CAR_API}/varedati/{url}')
-                if not data:
-                    await sent.edit_text('❌ اطلاعات خودروها فعلاً در دسترس نیست. کمی بعد دوباره تلاش کن.')
-                    return
-                await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
+            except requests.exceptions.RequestException:
+                await sent.delete()
+                await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+                return
+            
+            await sent.edit_text('📨 در حال آماده‌سازی فهرست خودروها...')
 
-                message = ""
-                for item in data:
-                    message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
+            message = ""
+            for item in data:
+                message += f"<tr><td>{item['name']}</td><td>{item['factory_price_txt']}</td><td>{item['bazar_price_txt']}</td><td>{item['change_price']:,}</td><td>{item['disagreement_price']}</td></tr>"
 
-                html = f"""
+            html = f"""
                 <h2>🚗 قیمت روز خودروهای {text}</h2>
                 <p><mark>🕒 زمان ثبت گزارش: {datetime.now(self.tehran).strftime('%H:%M:%S')}</mark></p>
 
@@ -1060,20 +1060,16 @@ class Arz:
                 <tg-button-row>
                     <tg-button type="url" style="success" url="https://t.me/arzpricekshbot">ورود به ربات</tg-button>
                 </tg-button-row>
-                """
-                await sent.delete()
-                await self.send_rich_message(update.effective_chat.id, html)
+            """
+            await sent.delete()
+            await self.send_rich_message(update.effective_chat.id, html)
 
-                return
+            return
 
-            elif text == '🧮 تبدیل ارز به ریال 🧮':
-                await self.reaction(update, context)
-                await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
-                    parse_mode='HTML')
-                return
-
-        except requests.exceptions.RequestException:
-            await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+        elif text == '🧮 تبدیل ارز به ریال 🧮':
+            await self.reaction(update, context)
+            await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
+                parse_mode='HTML')
             return
 
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1081,8 +1077,12 @@ class Arz:
         user_text = update.message.text
 
         try:
-            data = await self.get_arz(MAIN_API)
-
+            try:
+                data = await self.get_arz(MAIN_API)
+            except requests.exceptions.RequestException:
+                await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+                return
+        
             if re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -1128,73 +1128,67 @@ class Arz:
                 )
                 return
             
-            send_message = await update.message.reply_text("🤖 در حال تحلیل و پاسخ...")
+            send_message = await update.message.reply_text("🤖 در حال ارسال پیام شما به Gemini...")
 
-            #tether = data['crypto_prices']['items'][0]['price_toman']
-            #dollar = data['currency_prices']['items'][0]['sell_price']['value']
-            #eurro = data['currency_prices']['items'][1]['sell_price']['value']
-            #seke_emami = data['gold_prices']['items'][2]['price']
-            #azadi = data['gold_prices']['items'][3]['price']
-            #nim = data['gold_prices']['items'][4]['price']
-            #rob = data['gold_prices']['items'][5]['price']
-            #tala_18 = data['gold_prices']['items'][1]['price']
+            tether = data['crypto_prices']['items'][0]['price_toman']
+            dollar = data['currency_prices']['items'][0]['sell_price']['value']
+            eurro = data['currency_prices']['items'][1]['sell_price']['value']
+            seke_emami = data['gold_prices']['items'][2]['price']
+            azadi = data['gold_prices']['items'][3]['price']
+            nim = data['gold_prices']['items'][4]['price']
+            rob = data['gold_prices']['items'][5]['price']
+            tala_18 = data['gold_prices']['items'][1]['price']
 
-            #prices = (
-                #"اطلاعات لحظه ای بازار امروز:\n"
-                #f"قیمت تتر: {int(tether):,}\n"
-                #f"قیمت دلار: {int(dollar):,}\n"
-                #f"قیمت یورو: {int(eurro):,}\n"
-                #f"قیمت سکه امامی: {int(seke_emami):,}\n"
-                #f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
-                #f"قیمت نیم سکه: {int(nim):,}\n"
-                #f"قیمت ربع سکه: {int(rob):,}\n"
-                #f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
-            #)
+            prices = (
+                "اطلاعات لحظه ای بازار امروز:\n"
+                f"قیمت تتر: {int(tether):,}\n"
+                f"قیمت دلار: {int(dollar):,}\n"
+                f"قیمت یورو: {int(eurro):,}\n"
+                f"قیمت سکه امامی: {int(seke_emami):,}\n"
+                f"قیمت سکه بهار آزادی: {int(azadi):,}\n"
+                f"قیمت نیم سکه: {int(nim):,}\n"
+                f"قیمت ربع سکه: {int(rob):,}\n"
+                f"قیمت طلای 18 عیار: {int(tala_18):,}\n"
+            )
 
-            #full_prompt = f"""
+            full_prompt = f"""
                 #تو ربات قیمت نما و نقش مشاور مالی هوشمند هستی.
                 #این قیمت ها را داشته باش و هر موقع کاربر از ان ها سوال و تحلیل خواست استفاده کن:
-                #{prices}
+                {prices}
 
                 #نام کاربر: {update.effective_user.full_name}
                 #سوال کاربر این است: "{user_text}"
                 
                 #لطفاً با توجه به قیمت‌های فوق و با لحنی حرفه‌ای، به کاربر پاسخ بده و تحلیل کوتاهی ارائه کن.
                 
-                #⚠️ قوانین مهم نگارشی:
-                #1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
+                ⚠️ قوانین مهم نگارشی:
+                1. قانون سلام و احوالپرسی: اگر این پیام ادامه یک گفتگو است یا کاربر سوالات پشت سر هم می‌پرسد، **به هیچ وجه سلام نکن، اسم کاربر را تکرار نکن و خودت را معرفی نکن**، بلکه مستقیماً و بدون مقدمه به سراغ پاسخ برو. فقط در صورتی که این اولین پیام و شروعِ ارتباط کاربر باشد مجاز به یک سلام کوتاه هستی.
                 #2. فقط در صورتی که سوال کاربر درباره بازار، قیمت‌ها یا سرمایه‌گذاری بود از اطلاعات قیمت‌های بالا استفاده کن. اگر سوال متفرقه بود طبیعی و متناسب با همان سوال پاسخ مناسب بده.
                 #3. به هیچ وجه از علامت ستاره (* یا **) برای بولد کردن یا لیست‌سازی استفاده نکن.
                 #4. اگر خواسته‌ایی چیزی را برجسته کنی یا تیتربندی کنی، از اعداد یا ایموجی‌ها استفاده کن و به جای ستاره از تگ‌های HTML مثل <b>متن</b> بهره ببر.
-            #"""
+            """
 
+            await send_message.edit_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
                 result = await self.client.aio.interactions.create(
                     model='gemini-3.8-flash',
-                    input=user_text
+                    input=full_prompt
                 )
 
+                await send_message.delete()    
                 await update.message.reply_text(result.output_text, parse_mode="HTML")
                 return
             
-            except Exception as e:
-                if "503" in str(e) or "UNAVAILABLE" in str(e):
-                    await send_message.edit_text("⚠️ سرور هوش مصنوعی در حال حاضر شلوغ است. لطفاً چند لحظه دیگر دوباره تلاش کن.")
-                elif "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                    await send_message.edit_text("⚠️ تعداد درخواست‌ها زیاد است. لطفاً چند ثانیه صبر کن و دوباره پیام بده.")
-                    await context.bot.send_message(
-                        ADMIN_ID, 
-                        f'🚨 هشدار: سهمیه API گوگل تمام شد یا به محدودیت (429) خورد!\nکاربر: {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}'
-                    )
-                    return
-                
-                else:
-                    await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
-                await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{e}')
+            except APIError as ai_error:
+                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
+                print(f'AI Error: {ai_error}')
                 return
             
-        except requests.exceptions.RequestException:
-            await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
+        except Exception as e:
+            await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
+            await context.bot.send_message(ADMIN_ID, f'ارور هنگام ارتباط برای {update.effective_user.full_name}\n\n{e}')
+            print(f'unknown error: {e}')
             return
 
 def auto_set_hours(job_queue):
