@@ -1123,7 +1123,7 @@ class Arz:
 
         elif text == '🧮 تبدیل ارز به ریال 🧮':
             await self.reaction(update, context)
-            await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
+            await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 ریال عمان</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
                 parse_mode='HTML')
             return
 
@@ -1183,7 +1183,7 @@ class Arz:
                 )
                 return
 
-            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:ریال(?:\s+عمان)?|عمان)\s*)', user_text):
+            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:ریال(?:\s+عمان)?|عمان)\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
                     '01234567890123456789'
