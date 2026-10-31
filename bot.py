@@ -775,7 +775,7 @@ class Arz:
         return html
 
     async def send_rich_message(self, chat_id: int, html_content: str, reply_markup=None):
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendRichMessage"
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}"
         body = {
             "chat_id": chat_id,
             "rich_message": {
@@ -788,8 +788,14 @@ class Arz:
             body['reply_markup'] = reply_markup
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=body) as response:
-                return await response.json()
+            async with session.post(f'{url}/sendRichMessage', json=body) as response:
+                if not response.ok:
+                    error = await response.text()
+                    await session.post(f'{url}/sendMessage', json={
+                        "chat_id": chat_id,
+                        "text": f"⚠️ Error ({response.status}): {error}"
+                    })
+        return
 
     async def reaction(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.set_message_reaction(chat_id=update.message.chat_id,
@@ -1120,7 +1126,7 @@ class Arz:
             await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
                 parse_mode='HTML')
             return
-            
+
     async def genai_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await self.reaction(update, context)
         user_text = update.message.text
@@ -1131,7 +1137,7 @@ class Arz:
             except requests.exceptions.RequestException:
                 await update.message.reply_text("❌ دریافت اطلاعات ناموفق بود. لطفاً کمی بعد دوباره تلاش کن.")
                 return
-
+        
             if re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+دلار\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -1146,7 +1152,7 @@ class Arz:
                     f'\U0001f4b5 {amount_text} دلار = {int(toman):,} تومان\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
                 )
                 return
-
+                
             elif re.fullmatch(r'\s*[-0-9۰-۹٠٩]+(?:[.,][-0-9۰-۹٠٩]+)?\s+یورو\s*', user_text):
                 normalized_text = user_text.translate(str.maketrans(
                     '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
@@ -1177,13 +1183,25 @@ class Arz:
                 )
                 return
 
+            elif re.fullmatch(r'\s*[0-9۰-۹٠-٩]+(?:[.,][0-9۰-۹٠-٩]+)?\s+(?:ریال(?:\s+عمان)?|عمان)\s*)', user_text):
+                normalized_text = user_text.translate(str.maketrans(
+                    '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
+                    '01234567890123456789'
+                ))
+                amount_text = normalized_text.split()[0].replace(',', '.')
+                oman = data['currency_prices']['items'][15]
+                toman = float(amount_text) * int(oman['sell_price']['value'])
+                time = datetime.now(self.tehran).strftime('%H:%M:%S | %Y/%m/%d')
+
+                await update.message.reply_text(
+                    f'🇴🇲 {amount_text} ریال عمان = {int(toman):,}\n\n🕒 <b>زمان:</b> {time}', parse_mode='HTML'
+                )
+                return
+            
             tether = data['crypto_prices']['items'][0]['price_toman']
             dollar = data['currency_prices']['items'][0]['sell_price']['value']
             eurro = data['currency_prices']['items'][1]['sell_price']['value']
             seke_emami = data['gold_prices']['items'][2]['price']
-            azadi = data['gold_prices']['items'][3]['price']
-            nim = data['gold_prices']['items'][4]['price']
-            rob = data['gold_prices']['items'][5]['price']
             tala_18 = data['gold_prices']['items'][1]['price']
 
             prices = (
@@ -1204,7 +1222,6 @@ class Arz:
                 f"3. برای برجسته‌سازی از تگ HTML مثل <b>متن</b> یا ایموجی استفاده کن."
             )
 
-
             send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
                 result = await self.client.aio.interactions.create(
@@ -1215,12 +1232,15 @@ class Arz:
                 await send_message.delete()    
                 await update.message.reply_text(result.output_text, parse_mode="HTML")
                 return
-
+            
             except Exception as ai_error:
-                await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
-                await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
+                if '503' in str(ai_error):
+                    await send_message.edit_text("سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
+                else:
+                    await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                    await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
                 return
-
+            
         except Exception as e:
             await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
             await context.bot.send_message(ADMIN_ID, f'ارور هنگام ارتباط برای {update.effective_user.full_name}\n\n{e}')
@@ -1264,7 +1284,7 @@ if __name__ == '__main__':
     button_text = ['💱 خلاصه قیمت ها 🪙', '🪙 قیمت سکه 🪙', '💰 قیمت طلا 💰', '💱 قیمت ارز ها 💱', 
         '🚗 خودرو های وارداتی 🚗', '🚗 خودرو های داخلی 🚗', '🧮 تبدیل ارز به ریال 🧮', 'هیوندای',
         'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی',
-        'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا', 'سایپا', 'ایران خودرو', 'سایر', 'بهمن موتور', '🔙 بازگشت'
+        'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا', 'سایپا', 'ایران خودرو', 'سایر', 'بهمن موتور', 'مدیران خودرو', 'کرمان موتور', '🔙 بازگشت'
     ]
     pattern = f"^({'|'.join(button_text)})$"
 
