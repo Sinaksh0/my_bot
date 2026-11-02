@@ -286,7 +286,7 @@ class Arz:
             <h1>آپدیت تجمعی نسخه v{VERSION} ✨</h1>
 
             <h2>✨ تغییرات این نسخه</h2>
-            <p>دستیار قدرتمند هوش مصنوعی <b>Google Gemini</b> به ربات اضافه شد!.<ح.🚀</p>
+            <p>دستیار قدرتمند هوش مصنوعی <b>Google Gemini</b> به ربات اضافه شد!.🚀</p>
 
             <p>از این به بعد، ربات ما فقط یک استعلام‌گیرنده‌ی قیمت نیست؛ بلکه به یک مشاور و تحلیلگر هوشمند تبدیل شده است. 💬 هر سوالی در مورد بازار، اقتصاد، تحلیل قیمت‌ها یا حتی موضوعات متفرقه داری، کافیه مستقیماً برای ربات بفرستی تا در چند ثانیه کامل‌ترین پاسخ رو بهت بده! همین حالا امتحان کن و سوالت رو بفرست... 👇🤖</p>
 
@@ -456,7 +456,7 @@ class Arz:
         return
 
     async def admin_panel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.effective_chat.type != 'private' and update.effective_user.id != ADMIN_ID:
+        if update.effective_chat.type != 'private' or update.effective_user.id != ADMIN_ID:
             return
 
         await self.reaction(update, context)
@@ -1206,15 +1206,16 @@ class Arz:
             full_prompt = (
                 f"تو مشاور مالی ربات قیمت‌نما هستی.\n"
                 f"نرخ‌های لحظه‌ای بازار:\n{prices}\n\n"
+                f"نام کاربر: {update.effective_user.full_name}"
                 f"سوال کاربر: {user_text}\n\n"
                 "قوانین:\n"
                 "1. اگر سوال مربوط به بازار و قیمت بود از نرخ‌ها استفاده کن، وگرنه متناسب با سوال پاسخ بده.\n"
-                "2. هر سری هم نمیخواد سلام و احوال پرسی کنی.\n"
+                "2. فقط یکبار سلام کن به کاربری که مجدد سوال میکنه.\n"
                 "3. به هیچ وجه از ستاره (* یا **) استفاده نکن.\n"
                 "4. برای برجسته‌سازی از تگ HTML مثل <b>متن</b> یا ایموجی استفاده کن."
             )
 
-            send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
+            send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...')
             try:
                 result = await self.client.aio.interactions.create(
                     model='gemini-3.1-flash-lite', 
