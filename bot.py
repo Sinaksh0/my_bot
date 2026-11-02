@@ -21,7 +21,7 @@ GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
 API_GEN = os.getenv('Gen_API')
-VERSION = '4.2.0'
+VERSION = '4.3.0'
 
 class Arz:
     def __init__(self):
@@ -810,7 +810,8 @@ class Arz:
 
         if text is None:
             return
-        
+        await self.reaction(update, context)
+
         try:
             data = await self.get_arz(MAIN_API)
             gold = await self.get_arz(GOLD_API)
@@ -819,7 +820,6 @@ class Arz:
             return
         
         if text == '💱 قیمت ارز ها 💱':
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت‌ها...')
             data = data['currency_prices']['items']
             dollar = data[0]
@@ -867,7 +867,6 @@ class Arz:
             return
             
         elif text == '🪙 قیمت سکه 🪙':
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت سکه‌ها...')
             data = data['gold_prices']['items']
 
@@ -940,7 +939,6 @@ class Arz:
             return
             
         elif text == '💰 قیمت طلا 💰':
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت طلا...')
             tala_18 = data['gold_prices']['items'][1]
             gold_global = gold['data'][0]
@@ -985,7 +983,6 @@ class Arz:
             return
             
         elif text == '💱 خلاصه قیمت ها 🪙':
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال آماده‌سازی خلاصه‌ی بازار...')
             result = await self.send_daily(context)
 
@@ -995,7 +992,6 @@ class Arz:
             return
             
         elif text == '🚗 خودرو های داخلی 🚗':
-            await self.reaction(update, context)
             await update.message.reply_text(
                 "🚗 فهرست خودروهای داخلی\nیکی از گزینه‌ها را انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(self.dakhelikeyboard, resize_keyboard=True)
@@ -1003,7 +999,6 @@ class Arz:
             return
 
         elif text == '🚗 خودرو های وارداتی 🚗':
-            await self.reaction(update, context)
             await update.message.reply_text(
                 "🚙 فهرست خودروهای وارداتی\nیکی از گزینه‌ها را انتخاب کن:",
                 reply_markup=ReplyKeyboardMarkup(self.carkeyboard, resize_keyboard=True)
@@ -1011,7 +1006,6 @@ class Arz:
             return
 
         elif text in '🔙 بازگشت':
-            await self.reaction(update, context)
             if update.effective_chat.type == 'private' and update.effective_user.id == ADMIN_ID:
                 keyboard = self.admin_keyborad
             else:
@@ -1023,7 +1017,6 @@ class Arz:
             return
 
         elif text in ['ایران خودرو', 'سایپا', 'مدیران خودرو', 'کرمان موتور', 'بهمن موتور', 'سایر']:
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
 
             cars = {
@@ -1066,7 +1059,6 @@ class Arz:
             return
 
         elif text in ['هیوندای', 'کیا', 'تویوتا', 'بنز', 'بی ام و', 'فولکس واگن', 'مزدا', 'ولوو', 'آئودی', 'نیسان', 'هوندا', 'میتسوبیشی', 'MG', 'BYD', 'GAC', 'چانگان', 'ونوسیا', 'اشکودا']:
-            await self.reaction(update, context)
             sent = await update.message.reply_text('⏳ در حال دریافت قیمت خودروها...')
 
             cars = {
@@ -1122,7 +1114,6 @@ class Arz:
             return
 
         elif text == '🧮 تبدیل ارز به ریال 🧮':
-            await self.reaction(update, context)
             await update.message.reply_text('🧮 مقدار و نام موردنظر را بفرست؛ مثلاً:\n<b>10 دلار</b>\n<b>25 یورو</b>\n<b>30 ریال عمان</b>\n<b>30 گرم طلا</b> یا <b>30 گرم</b>', 
                 parse_mode='HTML')
             return
@@ -1216,16 +1207,17 @@ class Arz:
                 f"تو مشاور مالی ربات قیمت‌نما هستی.\n"
                 f"نرخ‌های لحظه‌ای بازار:\n{prices}\n\n"
                 f"سوال کاربر: {user_text}\n\n"
-                f"قوانین:\n"
-                f"1. اگر سوال مربوط به بازار و قیمت بود از نرخ‌ها استفاده کن، وگرنه متناسب با سوال پاسخ بده.\n"
-                f"2. به هیچ وجه از ستاره (* یا **) استفاده نکن.\n"
-                f"3. برای برجسته‌سازی از تگ HTML مثل <b>متن</b> یا ایموجی استفاده کن."
+                "قوانین:\n"
+                "1. اگر سوال مربوط به بازار و قیمت بود از نرخ‌ها استفاده کن، وگرنه متناسب با سوال پاسخ بده.\n"
+                "2. هر سری هم نمیخواد سلام و احوال پرسی کنی.\n"
+                "3. به هیچ وجه از ستاره (* یا **) استفاده نکن.\n"
+                "4. برای برجسته‌سازی از تگ HTML مثل <b>متن</b> یا ایموجی استفاده کن."
             )
 
             send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...\nلطفا تا پاسخ نهایی کمی صبر کنید.')
             try:
                 result = await self.client.aio.interactions.create(
-                    model='gemini-3.8-flash', 
+                    model='gemini-3.1-flash-lite', 
                     input=full_prompt
                 )
 
@@ -1235,15 +1227,15 @@ class Arz:
             
             except Exception as ai_error:
                 if '503' in str(ai_error):
-                    await send_message.edit_text("سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
+                    await send_message.edit_text("⚠️ سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
                 else:
-                    await send_message.edit_text("متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
-                    await context.bot.send_message(ADMIN_ID, f'ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
+                    await send_message.edit_text("⚠️ متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                    await context.bot.send_message(ADMIN_ID, f'⚠️ ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
                 return
             
         except Exception as e:
             await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
-            await context.bot.send_message(ADMIN_ID, f'ارور هنگام ارتباط برای {update.effective_user.full_name}\n\n{e}')
+            await context.bot.send_message(ADMIN_ID, f'⚠️ Error for: {update.effective_user.full_name}\n\n{e}')
             return
 
 def auto_set_hours(job_queue):
