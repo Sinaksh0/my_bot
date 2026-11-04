@@ -547,7 +547,7 @@ class Arz:
             return
         
         msg = text.replace('/send', '').strip()
-        await context.bot.send_message(chat_id=ADMIN_ID, text=f'📨 پیام از {update.effective_user.full_name} ({update.effective_user.id}):\n\n{msg}')
+        await context.bot.send_message(chat_id=ADMIN_ID, text=f'📨 پیام از {update.effective_user.full_name} (<code>{update.effective_user.id}</code>):\n\n{msg}', parse_mode='HTML')
         await update.message.reply_text('✅ پیامت برای مدیر فرستاده شد.')
 
     async def inline_query_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1221,33 +1221,37 @@ class Arz:
                     model='gemini-3.5-flash-lite', 
                     input=full_prompt
                 )
-
-                await send_message.delete()    
-                await update.message.reply_text(result.output_text, parse_mode="HTML")
-                return
-            
             except Exception as ai_error:
-                if '503' in str(ai_error):
-                    try:
-                        second_res = await self.client.aio.interactions.create(
-                            model='gemini-3.1-flash-lite', 
-                            input=full_prompt
-                        )
-                        await send_message.delete()    
-                        await update.message.reply_text(second_res.output_text, parse_mode="HTML")
-                        return
-                    
-                    except Exception as ai:
-                        if '503' in ai:
-                            await send_message.edit_text("⚠️ سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
-                else:
+                if '503' not in str(ai_error):
                     await send_message.edit_text("⚠️ متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
-                    await context.bot.send_message(ADMIN_ID, f'⚠️ ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
+                    await context.bot.send_message(ADMIN_ID, f'⚠️ ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}\nمتن کاربر:\n{user_text}')
+                    return
+
+                try:
+                    result = await self.client.aio.interactions.create(
+                        model='gemini-3.1-flash-lite', 
+                        input=full_prompt
+                    )
+                except Exception as fallback_error:
+                    if '503' in str(fallback_error):
+                        await send_message.edit_text("⚠️ سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
+                    else:
+                        await send_message.edit_text("⚠️ متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
+                        await context.bot.send_message(ADMIN_ID, f'⚠️ ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{fallback_error}\nمتن کاربر:\n{user_text}')
+                    return
+
+            try:
+                await update.message.reply_text(result.output_text, parse_mode="HTML")
+            except Exception as delivery_error:
+                await send_message.edit_text("⚠️ پاسخ آماده شد اما ارسال آن ناموفق بود. لطفاً دوباره تلاش کن.")
+                await context.bot.send_message(ADMIN_ID, f'⚠️ ارور ارسال پاسخ Gemini برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{delivery_error}\nمتن کاربر:\n{user_text}')
                 return
+
+            await send_message.delete()
             
         except Exception as e:
             await update.message.reply_text("❌ خطایی رخ داد. لطفاً مجدداً تلاش کنید.")
-            await context.bot.send_message(ADMIN_ID, f'⚠️ Error for: {update.effective_user.full_name}\n\n{e}')
+            await context.bot.send_message(ADMIN_ID, f'⚠️ Error for: {update.effective_user.full_name}\n\n{e}\n\nمتن کاربر:\n{user_text}')
             return
 
 def auto_set_hours(job_queue):
