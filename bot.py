@@ -21,7 +21,7 @@ GIT = os.getenv('GIT_Token')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 KEY = os.getenv('Key')
 API_GEN = os.getenv('Gen_API')
-VERSION = '4.3.0'
+VERSION = '4.3.1'
 
 class Arz:
     def __init__(self):
@@ -1218,7 +1218,7 @@ class Arz:
             send_message = await update.message.reply_text('🤖 در حال دریافت پاسخ از Gemini...')
             try:
                 result = await self.client.aio.interactions.create(
-                    model='gemini-3.1-flash-lite', 
+                    model='gemini-3.5-flash-lite', 
                     input=full_prompt
                 )
 
@@ -1228,7 +1228,18 @@ class Arz:
             
             except Exception as ai_error:
                 if '503' in str(ai_error):
-                    await send_message.edit_text("⚠️ سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
+                    try:
+                        second_res = await self.client.aio.interactions.create(
+                            model='gemini-3.1-flash-lite', 
+                            input=full_prompt
+                        )
+                        await send_message.delete()    
+                        await update.message.reply_text(second_res.output_text, parse_mode="HTML")
+                        return
+                    
+                    except Exception as ai:
+                        if '503' in ai:
+                            await send_message.edit_text("⚠️ سرور هوش مصنوعی شلوغ است، لطفا چند دقیقه بعد مجدد تلاش کنید.")
                 else:
                     await send_message.edit_text("⚠️ متأسفانه خطایی در ارتباط با هوش مصنوعی رخ داد.")
                     await context.bot.send_message(ADMIN_ID, f'⚠️ ارور هوش مصنوعی برای کاربر {update.effective_chat.id} | {update.effective_user.full_name}\n\n{ai_error}')
